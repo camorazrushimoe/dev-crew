@@ -3,7 +3,8 @@ name: dev-crew
 # Dev Crew — portable agent factory.
 # 3 engineering agents (Hermes) + shared memory (Redis), one Docker project.
 #
-# Each agent is an isolated hermes-home mounted into /opt/data.
+# Each agent is an isolated hermes-home mounted into /opt/data, plus its
+# role skills mounted read-only as the "dev-crew" skill category.
 # The webhook "door" listens on 8644 inside the container and is
 # mapped to a distinct host port (8651/8652/8653).
 #
@@ -35,6 +36,7 @@ services:
         condition: service_healthy
     volumes:
       - ./agents/developer/hermes-home:/opt/data
+      - ./agents/developer/skills:/opt/data/skills/dev-crew:ro
       - ./crew:/opt/crew:ro
     environment:
       - HERMES_UID=501
@@ -53,6 +55,7 @@ services:
         condition: service_healthy
     volumes:
       - ./agents/qa/hermes-home:/opt/data
+      - ./agents/qa/skills:/opt/data/skills/dev-crew:ro
       - ./crew:/opt/crew:ro
     environment:
       - HERMES_UID=501
@@ -71,6 +74,7 @@ services:
         condition: service_healthy
     volumes:
       - ./agents/tech-pm/hermes-home:/opt/data
+      - ./agents/tech-pm/skills:/opt/data/skills/dev-crew:ro
       - ./crew:/opt/crew:ro
     environment:
       - HERMES_UID=501
