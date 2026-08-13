@@ -32,6 +32,25 @@
 
 Шина обмена между агентами. Схема сообщения — `bus/action-schema.json`.
 
+## Быстрый старт (локально)
+
+```bash
+# 1. Поднять фабрику (3 агента + shared-memory Redis)
+docker compose up -d
+
+# 2. Пинг агента через CLI
+docker exec dev-crew-developer hermes chat -q "привет"
+
+# 3. Сообщение через webhook-«дверь» (с хоста, менеджер)
+python3 crew/crew-send.py developer "сделай задачу"
+
+# 4. Агент -> агент (изнутри контейнера)
+docker exec dev-crew-developer python3 /opt/crew/crew-send.py qa "просьба" --container
+```
+
+Порты «дверей»: `developer` — 8651, `qa` — 8652, `tech-pm` — 8653.
+Реестр агентов: `crew/agents.json` (реальный, gitignored) + `crew/agents.example.json` (шаблон).
+
 ## Статус
 
 Проект в активной проработке. См. `docs/architecture.md` и Linear-эпик.

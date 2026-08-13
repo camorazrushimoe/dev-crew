@@ -1,0 +1,82 @@
+# Dev Crew — агентная фабрика
+# 3 инженерных агента (Hermes) + общая память (Redis).
+#
+# Каждый агент — свой изолированный hermes-home, смонтированный в /opt/data.
+# Внутри контейнера webhook-«дверь» слушает порт 8644; наружу маппится на
+# отдельный порт хоста (8651/8652/8653).
+#
+# Запуск:
+#   docker compose up -d
+# Пинг агента:
+#   docker exec dev-crew-developer hermes chat -q "привет"
+#   python3 crew/crew-send.py developer "привет"
+
+services:
+  shared-memory:
+    image: redis:7-alpine
+    container_name: dev-crew-shared-memory
+    restart: unless-stopped
+    networks: [crew]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  developer:
+    image: nousresearch/hermes-agent:latest
+    container_name: dev-crew-developer
+    restart: unless-stopped
+    networks: [crew]
+    depends_on:
+      shared-memory:
+        condition: service_healthy
+    volumes:
+      - ./agents/developer/hermes-home:/opt/data
+      - ./crew:/opt/crew:ro
+    environment:
+      - HERMES_UID=501
+      - HERMES_GID=20
+    ports:
+      - "8651:8644"
+    command: ["gateway", "run"]
+
+  qa:
+    image: nousresearch/hermes-agent:latest
+    container_name: dev-crew-qa
+    restart: unless-stopped
+    networks: [crew]
+    depends_on:
+      shared-memory:
+        condition: service_healthy
+    volumes:
+      - ./agents/qa/hermes-home:/opt/data
+      - ./crew:/opt/crew:ro
+    environment:
+      - HERMES_UID=501
+      - HERMES_GID=20
+    ports:
+      - "8652:8644"
+    command: ["gateway", "run"]
+
+  tech-pm:
+    image: nousresearch/hermes-agent:latest
+    container_name: dev-crew-tech-pm
+    restart: unless-stopped
+    networks: [crew]
+    depends_on:
+      shared-memory:
+        condition: service_healthy
+    volumes:
+      - ./agents/tech-pm/hermes-home:/opt/data
+      - ./crew:/opt/crew:ro
+    environment:
+      - HERMES_UID=501
+      - HERMES_GID=20
+    ports:
+      - "8653:8644"
+    command: ["gateway", "run"]
+
+networks:
+  crew:
+    driver: bridge

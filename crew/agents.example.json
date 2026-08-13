@@ -1,0 +1,17 @@
+{
+  "developer": {
+    "host_url": "http://localhost:8651/webhooks/inbox",
+    "container_url": "http://developer:8644/webhooks/inbox",
+    "secret": "ЗАМЕНИ_НА_СЕКРЕТ_АГЕНТА"
+  },
+  "qa": {
+    "host_url": "http://localhost:8652/webhooks/inbox",
+    "container_url": "http://qa:8644/webhooks/inbox",
+    "secret": "ЗАМЕНИ_НА_СЕКРЕТ_АГЕНТА"
+  },
+  "tech-pm": {
+    "host_url": "http://localhost:8653/webhooks/inbox",
+    "container_url": "http://tech-pm:8644/webhooks/inbox",
+    "secret": "ЗАМЕНИ_НА_СЕКРЕТ_АГЕНТА"
+  }
+}
