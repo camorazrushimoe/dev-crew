@@ -1,15 +1,17 @@
-# Dev Crew — агентная фабрика
-# 3 инженерных агента (Hermes) + общая память (Redis).
+name: dev-crew
+
+# Dev Crew — portable agent factory.
+# 3 engineering agents (Hermes) + shared memory (Redis), one Docker project.
 #
-# Каждый агент — свой изолированный hermes-home, смонтированный в /opt/data.
-# Внутри контейнера webhook-«дверь» слушает порт 8644; наружу маппится на
-# отдельный порт хоста (8651/8652/8653).
+# Each agent is an isolated hermes-home mounted into /opt/data.
+# The webhook "door" listens on 8644 inside the container and is
+# mapped to a distinct host port (8651/8652/8653).
 #
-# Запуск:
+# Start:
 #   docker compose up -d
-# Пинг агента:
-#   docker exec dev-crew-developer hermes chat -q "привет"
-#   python3 crew/crew-send.py developer "привет"
+# Ping an agent:
+#   docker exec dev-crew-developer hermes chat -q "hello"
+#   python3 crew/crew-send.py developer "hello"
 
 services:
   shared-memory:

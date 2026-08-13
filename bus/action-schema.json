@@ -1,35 +1,35 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "DevCrew Action Envelope",
-  "description": "Стандартное сообщение шины между агентами (общий регистр действий)",
+  "description": "Standard message on the bus between agents (shared action registry)",
   "type": "object",
   "required": ["id", "actor", "action", "target", "timestamp"],
   "properties": {
     "id": {
       "type": "string",
-      "description": "Уникальный id сообщения (UUID)"
+      "description": "Unique message id (UUID)"
     },
     "actor": {
       "type": "string",
       "enum": ["developer", "qa", "tech-pm", "orchestrator"],
-      "description": "Кто отправил действие"
+      "description": "Who sent the action"
     },
     "action": {
       "type": "string",
-      "description": "Тип действия, например: task.created, pr.opened, review.requested, test.failed, memory.write"
+      "description": "Action type, e.g. task.created, pr.opened, review.requested, test.failed, memory.write"
     },
     "target": {
       "type": "string",
-      "description": "Получатель: id агента или '*' (broadcast)"
+      "description": "Recipient: agent id or '*' (broadcast)"
     },
     "payload": {
       "type": "object",
-      "description": "Полезная нагрузка действия (произвольный JSON)"
+      "description": "Action payload (arbitrary JSON)"
     },
     "timestamp": {
       "type": "string",
       "format": "date-time",
-      "description": "Время отправки (ISO 8601)"
+      "description": "Send time (ISO 8601)"
     }
   }
 }

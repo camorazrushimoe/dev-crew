@@ -1,22 +1,22 @@
 # ============================================================
-# Dev Crew — ШАБЛОН токенов по агентам.
-# Реальные значения — в tokens/tokens.yaml (gitignored).
-# Скопируй: cp tokens/tokens.example.yaml tokens/tokens.yaml
+# Dev Crew — per-agent tokens TEMPLATE.
+# Real values go in tokens/tokens.yaml (gitignored).
+# Copy: cp tokens/tokens.example.yaml tokens/tokens.yaml
 # ============================================================
 #
-# Каждый агент получает доступ только к СВОЕЙ секции (монтируется
-# в контейнер read-only). Один и тот же токен от сервиса можно
-# повторить у нескольких агентов, если сервис это позволяет.
+# Each agent gets access to its OWN section only (mounted into its
+# container read-only). The same service token can be repeated across
+# agents if the service allows it.
 
 agents:
   developer:
     github:
-      token: ""            # GITHUB_TOKEN агента
+      token: ""            # agent's GITHUB_TOKEN
       username: ""
     llm:
-      base_url: ""         # OpenAI-совместимый endpoint
-      api_key: ""          # ключ LLM-провайдера
-      model: ""            # модель по умолчанию
+      base_url: ""         # OpenAI-compatible endpoint
+      api_key: ""          # LLM provider key
+      model: ""            # default model
 
   qa:
     github:

@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-"""Dev Crew — дверной клиент (отправить сообщение агенту через его webhook-дверь).
+"""Dev Crew — door client (send a message to an agent through its webhook door).
 
-Подписывает запрос HMAC-SHA256 (заголовок X-Hub-Signature-256) и POST-ит
-сообщение в /webhooks/inbox выбранного агента. Ответ агент обрабатывает
-асинхронно (результат — в его логах или delivery-таргете), клиент лишь
-подтверждает приём (202).
+Signs the request with HMAC-SHA256 (X-Hub-Signature-256 header) and POSTs the
+message to the target agent's /webhooks/inbox. The agent processes it
+asynchronously (result lands in its logs / delivery target); this client just
+confirms receipt (202).
 
-Использование:
-  # с хоста (менеджер/человек)
-  python3 crew-send.py developer "сделай задачу"
+Usage:
+  # from the host (manager / human)
+  python3 crew-send.py developer "do this task"
 
-  # из контейнера (агент -> агент): используем container_url
-  python3 crew-send.py qa "просьба от developer" --container
+  # from inside a container (agent -> agent): use container_url
+  python3 crew-send.py qa "request from developer" --container
 
-Ноль зависимостей (только stdlib) — работает в любом окружении.
+Zero dependencies (stdlib only) — runs in any environment.
 """
 import sys
 import os
@@ -39,7 +39,7 @@ def sign(secret: str, payload: str) -> str:
 def send(agent: str, message: str, use_container: bool = False) -> tuple[int, str]:
     registry = load_registry(REGISTRY)
     if agent not in registry:
-        sys.exit(f"Неизвестный агент '{agent}'. Доступно: {', '.join(registry)}")
+        sys.exit(f"Unknown agent '{agent}'. Available: {', '.join(registry)}")
 
     cfg = registry[agent]
     url = cfg["container_url"] if use_container else cfg["host_url"]
