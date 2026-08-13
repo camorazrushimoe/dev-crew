@@ -72,6 +72,14 @@ docker exec dev-crew-developer python3 /opt/crew/crew-send.py qa "request" --con
 Doors map to host ports: `developer` 8651, `qa` 8652, `tech-pm` 8653.
 Agent registry: `crew/agents.json` (real, gitignored) + `crew/agents.example.json` (template).
 
+## Dashboard (observability)
+
+```bash
+python3 dashboard/app.py     # then open http://localhost:8660
+```
+
+Live team view: which agents are up, their state (`working` / `idle` / `down`) and the current task. A reporter loop polls each agent's `/health` + gateway log and writes status/activity to Redis (`shared-memory`). The dashboard renders it as a live page (auto-refresh every 2s).
+
 ## Status
 
 Active work in progress. See `docs/architecture.md` and the Linear epic.

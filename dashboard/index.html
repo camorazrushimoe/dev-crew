@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dev Crew — dashboard</title>
+<style>
+  :root { --bg:#0f1115; --card:#171a21; --border:#262b36; --text:#e6e9ef; --muted:#8b93a3; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: -apple-system, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--text); padding:24px; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--muted); font-size:13px; margin-bottom:20px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px; }
+  .card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px; }
+  .card .name { font-weight:600; font-size:16px; }
+  .card .role { color:var(--muted); font-size:12px; }
+  .status { display:flex; align-items:center; gap:8px; margin:12px 0 8px; }
+  .dot { width:10px; height:10px; border-radius:50%; background:var(--muted); }
+  .dot.working { background:#f5b942; box-shadow:0 0 8px #f5b942; }
+  .dot.idle { background:#3fbf6a; }
+  .dot.down { background:#e5534b; }
+  .task { font-size:13px; color:var(--text); background:#0a0c10; border-radius:8px; padding:8px; min-height:20px; word-break:break-word; }
+  .task.empty { color:var(--muted); }
+  h2 { font-size:15px; margin:24px 0 10px; }
+  .feed { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:8px 4px; }
+  .ev { display:flex; gap:10px; padding:6px 12px; font-size:13px; border-bottom:1px solid var(--border); }
+  .ev:last-child { border-bottom:none; }
+  .ev .agent { font-weight:600; min-width:80px; }
+  .ev .type { color:var(--muted); min-width:80px; }
+  .ev .text { color:var(--text); word-break:break-word; }
+  .ev .ts { margin-left:auto; color:var(--muted); font-size:11px; white-space:nowrap; }
+</style>
+</head>
+<body>
+  <h1>Dev Crew</h1>
+  <div class="sub">agent factory · live status · auto-refresh</div>
+  <div class="grid" id="grid"></div>
+  <h2>Activity</h2>
+  <div class="feed" id="feed"></div>
+
+<script>
+const STATE_LABEL = { working:'working', idle:'idle', down:'down' };
+async function refresh() {
+  try {
+    const r = await fetch('/api/status');
+    const data = await r.json();
+    renderAgents(data.agents || []);
+    renderFeed(data.activity || []);
+  } catch (e) { /* dashboard backend not up yet */ }
+}
+function renderAgents(agents) {
+  const g = document.getElementById('grid');
+  g.innerHTML = '';
+  const order = ['developer','qa','tech-pm'];
+  agents.sort((a,b)=>order.indexOf(a.agent)-order.indexOf(b.agent));
+  for (const a of agents) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    const task = a.task ? escapeHtml(a.task) : '<span class="empty">no active task</span>';
+    card.innerHTML = `
+      <div class="name">${a.name}</div>
+      <div class="role">${a.agent}</div>
+      <div class="status"><span class="dot ${a.state}"></span>${STATE_LABEL[a.state]||a.state}</div>
+      <div class="task">${task}</div>`;
+    g.appendChild(card);
+  }
+}
+function renderFeed(activity) {
+  const f = document.getElementById('feed');
+  f.innerHTML = '';
+  if (!activity.length) { f.innerHTML = '<div class="ev"><span class="text">no activity yet</span></div>'; return; }
+  for (const ev of activity) {
+    const d = document.createElement('div');
+    d.className = 'ev';
+    d.innerHTML = `<span class="agent">${ev.agent}</span><span class="type">${ev.type}</span><span class="text">${escapeHtml(ev.text||'')}</span><span class="ts">${(ev.ts||'').slice(11,19)}</span>`;
+    f.appendChild(d);
+  }
+}
+function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+refresh();
+setInterval(refresh, 2000);
+</script>
+</body>
+</html>
