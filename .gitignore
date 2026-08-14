@@ -54,6 +54,10 @@ volumes/
 *.sqlite
 *.db
 
+# === Workspace (рантайм-код проектов; README трекается) ===
+workspace/*
+!workspace/README.md
+
 # === OS / IDE ===
 .DS_Store
 .idea/
