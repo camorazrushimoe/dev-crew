@@ -42,15 +42,42 @@ flowchart TB
 - **Agent ↔ agent** — any agent can address another through the same door (container DNS inside the `crew` network).
 - **Shared bus** — `shared-memory` (Redis) is the common action registry for broadcast events between agents.
 
+## Planning gate (discuss before code)
+
+Agents do **not** start coding on receipt. Every task passes through a planning phase,
+encoded in each agent's SOUL:
+
+1. `tech-pm` writes a plan as a Linear ticket comment (approach, assumptions, risks, subtasks).
+2. `developer` + `qa` review the plan in the comments, flag wrong assumptions.
+3. **Manager approves explicitly** (comment "go"/"approved") — manual gate.
+4. Only then does `developer` implement (feature branch → PR), and `qa` verify against the plan.
+
+Linear ticket comments are the discussion channel (persistent + human-visible);
+Redis stays the signal/notification layer.
+
+## Universal clusters (project-agnostic)
+
+The factory ships with two empty environments any project can use — no per-project setup:
+
+| Cluster | Services | Host ports |
+|---------|----------|------------|
+| `dev-cluster` | `postgres-dev` + `neo4j-dev` | 5433 / 7475 / 7688 |
+| `staging-cluster` | `postgres-staging` + `neo4j-staging` | 5434 / 7476 / 7689 |
+
+Each project creates its own database/schema inside. Agents reach the clusters over
+the `crew` network via env vars (`DEV_POSTGRES_URL`, `STAGING_NEO4J_URI`, …).
+Credentials default in compose, overridable via `.env`.
+
 ## Project layout
 
 ```
-docker-compose.yml          # the whole team: 3 agents + Redis
+docker-compose.yml          # the whole team: 3 agents + Redis + clusters
 agents/<name>/hermes-home/  # isolated home per agent (config.yaml + SOUL.md)
 crew/crew-send.py           # door client — send a message to any agent
 crew/agents.json            # agent registry (urls + secrets, gitignored)
 bus/action-schema.json      # message schema for the bus
 tokens/tokens.example.yaml  # per-agent tokens template
+workspace/                  # shared code area (mounted into agents; gitignored)
 ```
 
 ## Quick start
@@ -82,4 +109,6 @@ Live team view: which agents are up, their state (`working` / `idle` / `down`) a
 
 ## Status
 
-Active work in progress. See `docs/architecture.md` and the Linear epic.
+Foundation: agents + Redis + universal clusters + planning gate are wired up
+(see `docs/architecture.md` and the Linear epic). Next: exercise the planning
+gate end-to-end on a real project.
