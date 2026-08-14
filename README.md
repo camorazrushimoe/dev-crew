@@ -4,12 +4,23 @@ A software development team made of isolated agents (Docker containers) that you
 
 ## The team
 
+**Agents** — one container each, with its own tools and skills:
+
 | Container | Role | Door (webhook) |
 |-----------|------|----------------|
 | `developer` | Writes code, opens PRs | `:8651` |
 | `qa` | Tests and verifies quality | `:8652` |
 | `tech-pm` | Breaks down work, prioritizes | `:8653` |
-| `shared-memory` | Shared Redis message bus | — |
+
+**Infrastructure** — shared services, one container each:
+
+| Container | Purpose | Host ports |
+|-----------|---------|------------|
+| `shared-memory` | Redis message bus | `:6379` |
+| `postgres-dev` | dev-cluster Postgres | `:5433` |
+| `postgres-staging` | staging-cluster Postgres | `:5434` |
+| `neo4j-dev` | dev-cluster Neo4j | `:7475` / `:7688` |
+| `neo4j-staging` | staging-cluster Neo4j | `:7476` / `:7689` |
 
 ## How they communicate
 
@@ -83,7 +94,7 @@ workspace/                  # shared code area (mounted into agents; gitignored)
 ## Quick start
 
 ```bash
-# 1. Start the factory (3 agents + shared-memory Redis)
+# 1. Start the factory (3 agents + Redis bus + dev/staging clusters)
 docker compose up -d
 
 # 2. Ping an agent via CLI
