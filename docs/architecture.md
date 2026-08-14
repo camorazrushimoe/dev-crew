@@ -95,6 +95,63 @@ Agents reach them over the `crew` network via environment variables:
 `STAGING_NEO4J_URI` + `STAGING_NEO4J_AUTH`. Credentials default in compose and are
 overridable via `.env` (see `.env.example`).
 
+## Foundation vs instance vs project (separation of concerns)
+
+The factory is a **template**: one versioned repo that can be cloned into any number of
+running instances. Three layers exist and must never mix.
+
+### 1. Foundation — the template (versioned, shared)
+
+Who the agents ARE and what they CAN do. Lives in this repo, tracked by git, updated
+by `git pull`. Identical across every instance.
+
+| Concern | Location |
+|---|---|
+| Identity (role) | `agents/<name>/hermes-home/SOUL.md` |
+| Capabilities | `agents/<name>/skills/` |
+| Team + infra definition | `docker-compose.yml` |
+| Communication protocol | `crew/`, `bus/` |
+| Docs | `docs/`, `README.md` |
+
+### 2. Instance config — per-machine (gitignored)
+
+Secrets and addresses that differ per running instance. Never committed.
+
+| Concern | Location |
+|---|---|
+| Cluster passwords | `.env` (template: `.env.example`) |
+| Agent tokens | `tokens/tokens.yaml` |
+| Door registry (HMAC secrets + URLs) | `crew/agents.json` |
+
+### 3. Project work — what agents produce (outside the foundation)
+
+The code, data and backlog of the products the factory builds. Never enters this repo.
+
+| Concern | Location |
+|---|---|
+| Project code | `workspace/<project>/` (its own git repo) |
+| Project data | cluster volumes (its own schema/DB inside the shared clusters) |
+| Project backlog | a **separate Linear project** |
+
+### Update flow (foundation upgrades don't touch project work)
+
+```
+foundation change → PR → merge on GitHub → git pull on an instance
+   → agents reload SOUL/skills ("become smarter")
+project work is untouched: workspace/, cluster data, and Linear projects are separate
+```
+
+### Agent self-awareness
+
+An agent's context is assembled from the layers, nothing project-specific is baked in:
+
+- **WHO I am** → `SOUL.md` (foundation)
+- **WHAT I can do** → skills (foundation)
+- **WHERE the infra is** → env vars: cluster URLs, workspace path (instance config)
+- **WHAT to do now** → the Linear ticket (project, arrives with each dispatch)
+
+Project context arrives per-task; the foundation stays project-agnostic.
+
 ## Open questions
 
 - What exactly agents write to shared memory (granularity of the bus).
