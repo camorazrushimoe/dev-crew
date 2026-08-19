@@ -8,3 +8,6 @@ platforms:
     extra:
       port: 8644
       secret: dev-crew-developer-secret-8651
+platform_toolsets:
+  webhook:
+    - hermes-cli

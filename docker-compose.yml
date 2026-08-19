@@ -50,6 +50,9 @@ services:
     environment:
       - HERMES_UID=501
       - HERMES_GID=20
+      - HERMES_WRITE_SAFE_ROOT=/opt/data:/workspace
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GIT_CONFIG_GLOBAL=/opt/data/.gitconfig
       # Universal clusters (project-agnostic)
       - DEV_POSTGRES_URL=postgresql://dev:${DEV_POSTGRES_PASSWORD:-devpass123}@postgres-dev:5432/dev
       - STAGING_POSTGRES_URL=postgresql://staging:${STAGING_POSTGRES_PASSWORD:-stagingpass}@postgres-staging:5432/staging
@@ -77,6 +80,9 @@ services:
     environment:
       - HERMES_UID=501
       - HERMES_GID=20
+      - HERMES_WRITE_SAFE_ROOT=/opt/data:/workspace
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GIT_CONFIG_GLOBAL=/opt/data/.gitconfig
       - DEV_POSTGRES_URL=postgresql://dev:${DEV_POSTGRES_PASSWORD:-devpass123}@postgres-dev:5432/dev
       - STAGING_POSTGRES_URL=postgresql://staging:${STAGING_POSTGRES_PASSWORD:-stagingpass}@postgres-staging:5432/staging
       - DEV_NEO4J_URI=bolt://neo4j-dev:7687
@@ -103,6 +109,9 @@ services:
     environment:
       - HERMES_UID=501
       - HERMES_GID=20
+      - HERMES_WRITE_SAFE_ROOT=/opt/data:/workspace
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GIT_CONFIG_GLOBAL=/opt/data/.gitconfig
       - DEV_POSTGRES_URL=postgresql://dev:${DEV_POSTGRES_PASSWORD:-devpass123}@postgres-dev:5432/dev
       - STAGING_POSTGRES_URL=postgresql://staging:${STAGING_POSTGRES_PASSWORD:-stagingpass}@postgres-staging:5432/staging
       - DEV_NEO4J_URI=bolt://neo4j-dev:7687
@@ -111,6 +120,35 @@ services:
       - STAGING_NEO4J_AUTH=neo4j/${STAGING_NEO4J_PASSWORD:-stagingpass}
     ports:
       - "8653:8644"
+    command: ["gateway", "run"]
+
+  devops:
+    image: nousresearch/hermes-agent:latest
+    container_name: dev-crew-devops
+    restart: unless-stopped
+    networks: [crew]
+    depends_on:
+      shared-memory:
+        condition: service_healthy
+    volumes:
+      - ./agents/devops/hermes-home:/opt/data
+      - ./agents/devops/skills:/opt/data/skills/dev-crew:ro
+      - ./crew:/opt/crew:ro
+      - ./workspace:/workspace
+    environment:
+      - HERMES_UID=501
+      - HERMES_GID=20
+      - HERMES_WRITE_SAFE_ROOT=/opt/data:/workspace
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GIT_CONFIG_GLOBAL=/opt/data/.gitconfig
+      - DEV_POSTGRES_URL=postgresql://dev:${DEV_POSTGRES_PASSWORD:-devpass123}@postgres-dev:5432/dev
+      - STAGING_POSTGRES_URL=postgresql://staging:${STAGING_POSTGRES_PASSWORD:-stagingpass}@postgres-staging:5432/staging
+      - DEV_NEO4J_URI=bolt://neo4j-dev:7687
+      - DEV_NEO4J_AUTH=neo4j/${DEV_NEO4J_PASSWORD:-devpass123}
+      - STAGING_NEO4J_URI=bolt://neo4j-staging:7687
+      - STAGING_NEO4J_AUTH=neo4j/${STAGING_NEO4J_PASSWORD:-stagingpass}
+    ports:
+      - "8654:8644"
     command: ["gateway", "run"]
 
   # ============================================================
