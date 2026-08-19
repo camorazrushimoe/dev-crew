@@ -35,7 +35,8 @@ read-only at `/opt/data/skills/dev-crew`.
 
 Each agent SHALL mount the shared workspace and tooling:
 `hermes-home` → `/opt/data`, role skills → `/opt/data/skills/dev-crew` (read-only),
-`crew/` → `/opt/crew` (read-only), `workspace/` → `/workspace`.
+`crew/` → `/opt/crew` (read-only), `workspace/` → `/workspace`. The workspace SHALL
+be read-only for `tech-pm` and read-write for `developer`, `qa`, and `devops`.
 
 ### Requirement: English-only output
 
