@@ -1,0 +1,24 @@
+schema: spec-driven
+
+context: |
+  Project: Dev Crew — a portable multi-agent software-development factory.
+  This repo is the FOUNDATION (a template, not a product): isolated Hermes
+  agents (developer / qa / tech-pm / devops), one Docker container each,
+  orchestrated as a single Docker Compose project, plus a Redis shared-memory
+  bus and dev/staging environments.
+
+  Tech stack: Docker Compose, Redis 7, Hermes Agent (nousresearch/hermes-agent),
+  Python 3 (door client + dashboard), Linear (backlog/discussion), GitHub (PRs).
+
+  The factory works spec-first (OpenSpec): no spec -> no work. The foundation
+  stays project-agnostic; instance config (secrets, door registry) and project
+  work live OUTSIDE this repo (see the layer-separation capability).
+
+  Conventions: code, commits, PRs, tickets and reports in English.
+  Door contract: POST /webhooks/inbox, HMAC-SHA256 (X-Hub-Signature-256).
+
+rules:
+  specs:
+    - Use WHEN/THEN (Given/When/Then) format for scenarios.
+  design:
+    - Keep foundation / instance-config / project-work separated in every artifact.

@@ -118,6 +118,19 @@ python3 dashboard/app.py     # then open http://localhost:8660
 
 Live team view: which agents are up, their state (`working` / `idle` / `down`) and the current task. A reporter loop polls each agent's `/health` + gateway log and writes status/activity to Redis (`shared-memory`). The dashboard renders it as a live page (auto-refresh every 2s).
 
+## Specs (OpenSpec)
+
+The foundation is spec-driven. Its contract lives in `openspec/`:
+
+- `openspec/config.yaml` — factory context + spec rules.
+- `openspec/specs/<capability>/spec.md` — requirements (SHALL) + scenarios
+  (WHEN/THEN) for each capability: `agent-roles`, `webhook-doors`, `message-bus`,
+  `planning-gate`, `layer-separation`, `observability`.
+- `openspec/changes/<change>/` — proposal / design / tasks for evolving the
+  foundation.
+
+Golden rule: **no spec → no work** (see `crew/FACTORY-STANDARD.md`).
+
 ## Status
 
 Foundation: agents + Redis + universal clusters + planning gate are wired up
