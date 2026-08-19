@@ -11,16 +11,16 @@ A software development team made of isolated agents (Docker containers) that you
 | `developer` | Writes code, opens PRs | `:8651` |
 | `qa` | Tests and verifies quality | `:8652` |
 | `tech-pm` | Breaks down work, prioritizes | `:8653` |
+| `devops` | Owns test/staging env, deploys merged code | `:8654` |
 
 **Infrastructure** — shared services, one container each:
 
 | Container | Purpose | Host ports |
 |-----------|---------|------------|
 | `shared-memory` | Redis message bus | `:6379` |
-| `postgres-dev` | dev-cluster Postgres | `:5433` |
-| `postgres-staging` | staging-cluster Postgres | `:5434` |
-| `neo4j-dev` | dev-cluster Neo4j | `:7475` / `:7688` |
-| `neo4j-staging` | staging-cluster Neo4j | `:7476` / `:7689` |
+
+Project services (databases, apps) live in each project's own compose file, not in
+the foundation (see "Generic environments" below).
 
 ## How they communicate
 
@@ -66,18 +66,18 @@ encoded in each agent's SOUL:
 Linear ticket comments are the discussion channel (persistent + human-visible);
 Redis stays the signal/notification layer.
 
-## Universal clusters (project-agnostic)
+## Generic environments (project-agnostic)
 
-The factory ships with two empty environments any project can use — no per-project setup:
+The factory ships with two empty networks any project can use — no per-project setup:
 
-| Cluster | Services | Host ports |
-|---------|----------|------------|
-| `dev-cluster` | `postgres-dev` + `neo4j-dev` | 5433 / 7475 / 7688 |
-| `staging-cluster` | `postgres-staging` + `neo4j-staging` | 5434 / 7476 / 7689 |
+| Environment | Network (name) |
+|-------------|----------------|
+| `dev-env` | `dev-crew-dev-env` |
+| `staging-env` | `dev-crew-staging-env` |
 
-Each project creates its own database/schema inside. Agents reach the clusters over
-the `crew` network via env vars (`DEV_POSTGRES_URL`, `STAGING_NEO4J_URI`, …).
-Credentials default in compose, overridable via `.env`.
+Each project brings its own services via `workspace/<project>/compose.yml` and
+attaches to `dev-env` / `staging-env` via `external: true`. Connection strings and
+credentials live in the project, not the foundation.
 
 ## Project layout
 

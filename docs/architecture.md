@@ -18,9 +18,9 @@ flowchart TB
             T["tech-pm"]
         end
         B[("shared-memory<br/>Redis — bus + state")]
-        subgraph Clusters["Universal clusters"]
-            DC[("dev-cluster<br/>postgres-dev + neo4j-dev")]
-            SC[("staging-cluster<br/>postgres-staging + neo4j-staging")]
+        subgraph Envs["Generic environments"]
+            DE[("dev-env<br/>(empty network)")]
+            SE[("staging-env<br/>(empty network)")]
         end
     end
 
@@ -34,8 +34,8 @@ flowchart TB
     Q <-->|"events / status"| B
     T <-->|"events / status"| B
 
-    D -->|"builds in"| DC
-    Q -->|"verifies in"| SC
+    D -->|"builds in"| DE
+    Q -->|"verifies in"| SE
 ```
 
 ## Components
@@ -45,7 +45,7 @@ flowchart TB
 - **entry point** — `crew-send.py` signs a message and POSTs it to any agent's webhook door.
 - **workspace** — a shared bind-mounted directory (`./workspace:/workspace`) where code lives.
   Developer and qa have read/write, tech-pm read-only.
-- **Universal clusters** — project-agnostic dev/staging environments (see below).
+- **Generic environments** — project-agnostic dev/staging networks (see below).
 
 ## Contracts
 
@@ -73,27 +73,27 @@ task (Linear ticket)
    → developer + qa review the plan in the comments (flag wrong assumptions)
    → manager explicitly approves (comment "go"/"approved")  ← manual gate
    → developer implements (feature branch → PR)
-   → qa verifies against the approved plan in staging-cluster
+   → qa verifies against the approved plan in staging-env
    → completion: comment + state change in Linear, ping manager
 ```
 
 No code is written until the plan is approved. This prevents agents from working
 hard on wrong assumptions.
 
-## Universal clusters (project-agnostic)
+## Generic environments (project-agnostic)
 
-Two isolated environments, shared by every project. Clusters start **empty** — each
-project creates its own database/schema inside them (no per-project containers).
+Two isolated, empty networks shared by every project. The foundation provides the
+networks; each project brings its own services via its own compose file.
 
-| Cluster | Services | Host ports | Purpose |
-|---------|----------|------------|---------|
-| dev-cluster | `postgres-dev`, `neo4j-dev` | 5433 / 7475+7688 | developer builds and breaks freely |
-| staging-cluster | `postgres-staging`, `neo4j-staging` | 5434 / 7476+7689 | qa verifies release candidates |
+| Environment | Network (name) | Purpose |
+|-------------|----------------|---------|
+| dev-env | `dev-crew-dev-env` | developer builds and breaks freely |
+| staging-env | `dev-crew-staging-env` | qa verifies release candidates |
 
-Agents reach them over the `crew` network via environment variables:
-`DEV_POSTGRES_URL`, `STAGING_POSTGRES_URL`, `DEV_NEO4J_URI` + `DEV_NEO4J_AUTH`,
-`STAGING_NEO4J_URI` + `STAGING_NEO4J_AUTH`. Credentials default in compose and are
-overridable via `.env` (see `.env.example`).
+A project declares its services in `workspace/<project>/compose.yml` and attaches to
+`dev-env` / `staging-env` via `external: true`. Services are named `<service>-dev` /
+`<service>-staging`. Agents reach them by service name over the relevant network.
+Connection strings and credentials live in the project, not the foundation.
 
 ## Foundation vs instance vs project (separation of concerns)
 

@@ -6,6 +6,7 @@ This directory is bind-mounted into the agents as `/workspace`:
 |-------|--------|-----|
 | `developer` | read/write | clones project repos, works on feature branches |
 | `qa` | read/write | checks out branches and runs the test suite |
+| `devops` | read/write | brings up project compose files, deploys to environments |
 | `tech-pm` | read-only | reads code for planning/review |
 
 ## How projects live here
@@ -24,5 +25,6 @@ workspace/
   is gitignored (see the repo `.gitignore`).
 - Agents use their **own git identity** (`agents/<name>/hermes-home/.gitconfig`)
   and follow the feature-branch + PR flow; they never commit directly to `main`.
-- Databases are **not** stored here — they live in the universal clusters
-  (`postgres-dev`, `neo4j-dev`, …) and are reached via env vars.
+- Project services (databases, apps) are **not** part of the foundation — each
+  project declares them in its own `workspace/<project>/compose.yml` and attaches
+  to the `dev-env` / `staging-env` networks via `external: true`.
