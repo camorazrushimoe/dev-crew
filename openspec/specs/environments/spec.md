@@ -9,8 +9,10 @@ The foundation SHALL provide two isolated, empty networks per instance:
 - `dev-env` — the dev/CI environment
 - `staging-env` — the pre-production environment
 
-These SHALL be declared by the foundation compose file with a stable, explicit
-`name:` and SHALL start empty (no services, no databases).
+These SHALL be declared by the foundation compose file with stable, explicit
+names (`dev-crew-dev-env` and `dev-crew-staging-env`) and SHALL start empty
+(no services, no databases). Projects SHALL attach to these names via
+`external: true`.
 
 #### Scenario: foundation provides no project services
 
@@ -20,9 +22,9 @@ These SHALL be declared by the foundation compose file with a stable, explicit
 
 ### Requirement: Agents reach both environments
 
-Every engineering agent (`developer`, `qa`, `tech-pm`, `devops`) SHALL be
-attached to the `crew` network (bus + agent-to-agent) AND to both `dev-env` and
-`staging-env` (project services).
+The build/verify/deploy agents (`developer`, `qa`, `devops`) SHALL be attached
+to the `crew` network (bus + agent-to-agent) AND to both `dev-env` and
+`staging-env` (project services). `tech-pm` SHALL be attached to `crew` only.
 
 #### Scenario: an agent reaches a project service
 
@@ -32,8 +34,8 @@ attached to the `crew` network (bus + agent-to-agent) AND to both `dev-env` and
 ### Requirement: Project brings its own compose
 
 Each project SHALL provide its own `workspace/<project>/compose.yml` declaring
-the services it needs, attached to `dev-env` and/or `staging-env` as external
-networks (`external: true`).
+the services it needs and its own data volumes, attached to `dev-env` and/or
+`staging-env` as external networks (`external: true`).
 
 #### Scenario: project declares its own services
 

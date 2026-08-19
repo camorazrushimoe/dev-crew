@@ -31,9 +31,14 @@ Agents attach to all three. A project's compose attaches its services to
 
 **Naming gotcha:** Compose prefixes network names with the project name (e.g.
 `dev-crew_dev-env`). To let project compose files attach by a stable name, the
-foundation SHALL set an explicit `name:` on each env network (e.g.
-`name: dev-crew-dev-env`). The project then declares the network with
-`external: true` and the same name.
+foundation SHALL set an explicit `name:` on each env network:
+`dev-crew-dev-env` and `dev-crew-staging-env`. The project then declares the
+network as external under that exact name, e.g.:
+
+    networks:
+      dev-env:
+        external: true
+        name: dev-crew-dev-env
 
 ### Why `external: true` over `profiles`
 
@@ -48,12 +53,26 @@ A single project compose file runs dev and staging side by side, so service
 names must be unique across the two networks an agent sees. Convention:
 `<service>-dev` on `dev-env`, `<service>-staging` on `staging-env`.
 
+### Data persistence
+
+Each project's compose SHALL declare its own volumes for persistence; the
+foundation no longer provides any data volumes.
+
 ### Connection info
 
 The foundation stops injecting `DEV_POSTGRES_URL`, `STAGING_POSTGRES_URL`,
 `DEV_NEO4J_URI`, `STAGING_NEO4J_URI`, and the matching `*_AUTH` vars. Each
 project documents its own connection strings; agents read them per-task from
 the project context.
+
+### Devops docker access
+
+To bring up project containers, the `devops` container SHALL have access to the
+host Docker daemon: mount `/var/run/docker.sock` (read-only) and ensure the
+Docker CLI is available. This lets devops run `docker compose -f
+<project>/compose.yml up -d` against the host's `dev-env` / `staging-env`
+networks. Trade-off: this grants devops host-Docker privileges — acceptable for
+the deploy role, but keep the mount read-only and scope it to `devops` only.
 
 ### Devops recipe (project environment onboarding)
 
