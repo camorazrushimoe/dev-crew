@@ -125,7 +125,7 @@ The foundation is spec-driven. Its contract lives in `openspec/`:
 - `openspec/config.yaml` — factory context + spec rules.
 - `openspec/specs/<capability>/spec.md` — requirements (SHALL) + scenarios
   (WHEN/THEN) for each capability: `agent-roles`, `webhook-doors`, `message-bus`,
-  `planning-gate`, `layer-separation`, `observability`.
+  `planning-gate`, `layer-separation`, `observability`, `environments`.
 - `openspec/changes/<change>/` — proposal / design / tasks for evolving the
   foundation.
 
