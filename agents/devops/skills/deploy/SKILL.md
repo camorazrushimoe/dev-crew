@@ -1,21 +1,23 @@
 # Deploy
 
-Deploy only reviewed + merged code to the clusters.
+Deploy only reviewed + merged code to the environments.
 
 ## Workflow
 
 1. **Confirm the request**: which project, which environment (dev/staging), what change.
-2. **Run migrations**: apply the project's migrations to the target Postgres cluster first.
-3. **Deploy the service**: start/update the service against the target cluster.
-4. **Verify**: health-check the service and DB, confirm the schema is correct.
+2. **Run migrations**: apply the project's migrations to the target database first.
+3. **Deploy the service**: start/update the service against the target environment.
+4. **Verify**: health-check the service, confirm the schema is correct.
 5. **Report**: explicit status — what was deployed, where, and the verification result.
 
-## Cluster connection
+## Environment connection
 
-- dev Postgres:      `$DEV_POSTGRES_URL`     (postgres-dev:5432)
-- staging Postgres:  `$STAGING_POSTGRES_URL` (postgres-staging:5432)
-- dev Neo4j:         `$DEV_NEO4J_URI`        (neo4j-dev:7687)
-- staging Neo4j:     `$STAGING_NEO4J_URI`    (neo4j-staging:7687)
+Environments are the `dev-env` (`dev-crew-dev-env`) and `staging-env`
+(`dev-crew-staging-env`) networks. Project services are reachable by their
+service name on the relevant network (e.g. `postgres-dev` on `dev-env`).
+
+Connection strings and credentials come from the PROJECT (its README / `.env`),
+NOT from the foundation. Read them from `workspace/<project>/` before deploying.
 
 ## Rules
 

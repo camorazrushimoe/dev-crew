@@ -1,18 +1,19 @@
 name: dev-crew
 
 # Dev Crew — portable agent factory.
-# 3 engineering agents (Hermes) + shared memory (Redis) + universal clusters.
+# 4 engineering agents (Hermes) + shared memory (Redis) + generic environments.
 #
 # Each agent is an isolated hermes-home mounted into /opt/data, plus its
 # role skills mounted read-only as the "dev-crew" skill category.
 # The webhook "door" listens on 8644 inside the container and is
-# mapped to a distinct host port (8651/8652/8653).
+# mapped to a distinct host port (8651/8652/8653/8654).
 #
-# Universal clusters (project-agnostic):
-#   - dev-cluster:     postgres-dev  (5433) + neo4j-dev  (7475/7688)
-#   - staging-cluster: postgres-staging (5434) + neo4j-staging (7476/7689)
-# Clusters start EMPTY. Each project gets its own database/schema inside them.
-# Agents reach them over the `crew` network via service names (see env vars).
+# Generic environments (project-agnostic):
+#   - dev-env      -> network "dev-crew-dev-env"     (dev/CI)
+#   - staging-env  -> network "dev-crew-staging-env" (pre-prod)
+# Networks start EMPTY. Projects bring their own compose
+# (workspace/<project>/compose.yml) and attach via `external: true`.
+# Agents reach project services over these networks by service name.
 #
 # Start:
 #   docker compose up -d
@@ -38,7 +39,7 @@ services:
     image: nousresearch/hermes-agent:latest
     container_name: dev-crew-developer
     restart: unless-stopped
-    networks: [crew]
+    networks: [crew, dev-env, staging-env]
     depends_on:
       shared-memory:
         condition: service_healthy
@@ -53,13 +54,6 @@ services:
       - HERMES_WRITE_SAFE_ROOT=/opt/data:/workspace
       - GITHUB_TOKEN=${GITHUB_TOKEN}
       - GIT_CONFIG_GLOBAL=/opt/data/.gitconfig
-      # Universal clusters (project-agnostic)
-      - DEV_POSTGRES_URL=postgresql://dev:${DEV_POSTGRES_PASSWORD:-devpass123}@postgres-dev:5432/dev
-      - STAGING_POSTGRES_URL=postgresql://staging:${STAGING_POSTGRES_PASSWORD:-stagingpass}@postgres-staging:5432/staging
-      - DEV_NEO4J_URI=bolt://neo4j-dev:7687
-      - DEV_NEO4J_AUTH=neo4j/${DEV_NEO4J_PASSWORD:-devpass123}
-      - STAGING_NEO4J_URI=bolt://neo4j-staging:7687
-      - STAGING_NEO4J_AUTH=neo4j/${STAGING_NEO4J_PASSWORD:-stagingpass}
     ports:
       - "8651:8644"
     command: ["gateway", "run"]
@@ -68,7 +62,7 @@ services:
     image: nousresearch/hermes-agent:latest
     container_name: dev-crew-qa
     restart: unless-stopped
-    networks: [crew]
+    networks: [crew, dev-env, staging-env]
     depends_on:
       shared-memory:
         condition: service_healthy
@@ -83,12 +77,6 @@ services:
       - HERMES_WRITE_SAFE_ROOT=/opt/data:/workspace
       - GITHUB_TOKEN=${GITHUB_TOKEN}
       - GIT_CONFIG_GLOBAL=/opt/data/.gitconfig
-      - DEV_POSTGRES_URL=postgresql://dev:${DEV_POSTGRES_PASSWORD:-devpass123}@postgres-dev:5432/dev
-      - STAGING_POSTGRES_URL=postgresql://staging:${STAGING_POSTGRES_PASSWORD:-stagingpass}@postgres-staging:5432/staging
-      - DEV_NEO4J_URI=bolt://neo4j-dev:7687
-      - DEV_NEO4J_AUTH=neo4j/${DEV_NEO4J_PASSWORD:-devpass123}
-      - STAGING_NEO4J_URI=bolt://neo4j-staging:7687
-      - STAGING_NEO4J_AUTH=neo4j/${STAGING_NEO4J_PASSWORD:-stagingpass}
     ports:
       - "8652:8644"
     command: ["gateway", "run"]
@@ -112,12 +100,6 @@ services:
       - HERMES_WRITE_SAFE_ROOT=/opt/data:/workspace
       - GITHUB_TOKEN=${GITHUB_TOKEN}
       - GIT_CONFIG_GLOBAL=/opt/data/.gitconfig
-      - DEV_POSTGRES_URL=postgresql://dev:${DEV_POSTGRES_PASSWORD:-devpass123}@postgres-dev:5432/dev
-      - STAGING_POSTGRES_URL=postgresql://staging:${STAGING_POSTGRES_PASSWORD:-stagingpass}@postgres-staging:5432/staging
-      - DEV_NEO4J_URI=bolt://neo4j-dev:7687
-      - DEV_NEO4J_AUTH=neo4j/${DEV_NEO4J_PASSWORD:-devpass123}
-      - STAGING_NEO4J_URI=bolt://neo4j-staging:7687
-      - STAGING_NEO4J_AUTH=neo4j/${STAGING_NEO4J_PASSWORD:-stagingpass}
     ports:
       - "8653:8644"
     command: ["gateway", "run"]
@@ -126,7 +108,7 @@ services:
     image: nousresearch/hermes-agent:latest
     container_name: dev-crew-devops
     restart: unless-stopped
-    networks: [crew]
+    networks: [crew, dev-env, staging-env]
     depends_on:
       shared-memory:
         condition: service_healthy
@@ -135,108 +117,24 @@ services:
       - ./agents/devops/skills:/opt/data/skills/dev-crew:ro
       - ./crew:/opt/crew:ro
       - ./workspace:/workspace
+      # Host Docker daemon (read-only) so devops can bring up project compose files.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
       - HERMES_UID=501
       - HERMES_GID=20
       - HERMES_WRITE_SAFE_ROOT=/opt/data:/workspace
       - GITHUB_TOKEN=${GITHUB_TOKEN}
       - GIT_CONFIG_GLOBAL=/opt/data/.gitconfig
-      - DEV_POSTGRES_URL=postgresql://dev:${DEV_POSTGRES_PASSWORD:-devpass123}@postgres-dev:5432/dev
-      - STAGING_POSTGRES_URL=postgresql://staging:${STAGING_POSTGRES_PASSWORD:-stagingpass}@postgres-staging:5432/staging
-      - DEV_NEO4J_URI=bolt://neo4j-dev:7687
-      - DEV_NEO4J_AUTH=neo4j/${DEV_NEO4J_PASSWORD:-devpass123}
-      - STAGING_NEO4J_URI=bolt://neo4j-staging:7687
-      - STAGING_NEO4J_AUTH=neo4j/${STAGING_NEO4J_PASSWORD:-stagingpass}
     ports:
       - "8654:8644"
     command: ["gateway", "run"]
 
-  # ============================================================
-  # Universal clusters — project-agnostic dev/staging environments.
-  # Start empty; each project creates its own schema/database inside.
-  # NOTE: Neo4j requires passwords of >= 8 characters (devpass123 etc.).
-  # ============================================================
-
-  postgres-dev:
-    image: postgres:16-alpine
-    container_name: dev-crew-postgres-dev
-    restart: unless-stopped
-    networks: [crew]
-    environment:
-      POSTGRES_USER: dev
-      POSTGRES_PASSWORD: ${DEV_POSTGRES_PASSWORD:-devpass123}
-      POSTGRES_DB: dev
-    ports:
-      - "5433:5432"
-    volumes:
-      - postgres-dev-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dev -d dev"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-
-  postgres-staging:
-    image: postgres:16-alpine
-    container_name: dev-crew-postgres-staging
-    restart: unless-stopped
-    networks: [crew]
-    environment:
-      POSTGRES_USER: staging
-      POSTGRES_PASSWORD: ${STAGING_POSTGRES_PASSWORD:-stagingpass}
-      POSTGRES_DB: staging
-    ports:
-      - "5434:5432"
-    volumes:
-      - postgres-staging-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U staging -d staging"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-
-  neo4j-dev:
-    image: neo4j:5
-    container_name: dev-crew-neo4j-dev
-    restart: unless-stopped
-    networks: [crew]
-    environment:
-      NEO4J_AUTH: neo4j/${DEV_NEO4J_PASSWORD:-devpass123}
-    ports:
-      - "7475:7474"   # HTTP
-      - "7688:7687"   # Bolt
-    volumes:
-      - neo4j-dev-data:/data
-    healthcheck:
-      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/7687' 2>/dev/null || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-
-  neo4j-staging:
-    image: neo4j:5
-    container_name: dev-crew-neo4j-staging
-    restart: unless-stopped
-    networks: [crew]
-    environment:
-      NEO4J_AUTH: neo4j/${STAGING_NEO4J_PASSWORD:-stagingpass}
-    ports:
-      - "7476:7474"   # HTTP
-      - "7689:7687"   # Bolt
-    volumes:
-      - neo4j-staging-data:/data
-    healthcheck:
-      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/7687' 2>/dev/null || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-
 networks:
   crew:
     driver: bridge
-
-volumes:
-  postgres-dev-data:
-  postgres-staging-data:
-  neo4j-dev-data:
-  neo4j-staging-data:
+  dev-env:
+    driver: bridge
+    name: dev-crew-dev-env
+  staging-env:
+    driver: bridge
+    name: dev-crew-staging-env
