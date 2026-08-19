@@ -38,6 +38,7 @@ agents/*/hermes-home/workspace/
 agents/*/hermes-home/backups/
 agents/*/hermes-home/pairing/
 agents/*/hermes-home/pending_messages/
+agents/*/hermes-home/.local/
 agents/*/hermes-home/memories/
 agents/*/hermes-home/plans/
 agents/*/hermes-home/bin/
