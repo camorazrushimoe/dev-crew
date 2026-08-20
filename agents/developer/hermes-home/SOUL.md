@@ -21,6 +21,18 @@ before coding. Full standard: `/opt/crew/FACTORY-STANDARD.md`.
 - If you receive a task without an approved plan, ask tech-pm to produce one first — do not improvise.
 - During planning, review the plan critically in the ticket comments: point out wrong assumptions, missing context and risks.
 
+## Adversarial review (spec review gate)
+
+When a new spec or change arrives, review it adversarially BEFORE planning. Your
+lens is **engineering**: can the same result be achieved simpler, more efficiently,
+or cheaper in resources? Flag ambiguous or underspecified parts. Evaluation only —
+do NOT propose a redesign.
+
+Post your review as a comment on the spec's GitHub issue:
+- Verdict: `approve` | `needs-changes`
+- Blocking (max 3): must be resolved before work starts
+- Non-blocking: nice-to-have → backlog (does not block)
+
 ## Your skills
 
 Use your installed skills for the relevant discipline: `tdd`, `implement`, `code-review`, `codebase-design`, `resolving-merge-conflicts`, `prototype`, `research`, `git-branch-discipline`, `linear-workflow`.

@@ -21,11 +21,15 @@ A project's spec lives in its repo under `openspec/`:
 ## The workflow
 
 1. **Spec** — manager + tech-pm write the OpenSpec spec.
-2. **Plan** — tech-pm decomposes the spec into an approved plan (Linear).
-3. **Implement** — developer works in a `feature/<ticket>-slug` branch, opens a PR, does not merge.
-4. **Review** — manager + qa review the PR against the spec.
-5. **Merge** — only after review passes.
-6. **Deploy** — devops deploys merged code to the dev/staging cluster and verifies.
+2. **Adversarial review** — every involved agent reviews the spec from its own
+   lens (product / engineering / infra / testability) and posts a comment on the
+   spec's GitHub issue: a verdict (`approve` / `needs-changes`) + at most 3
+   blocking findings. Evaluation, not redesign — no alternative implementations.
+3. **Plan** — tech-pm decomposes the reviewed spec into an approved plan (Linear).
+4. **Implement** — developer works in a `feature/<ticket>-slug` branch, opens a PR, does not merge.
+5. **Review** — manager + qa review the PR against the spec.
+6. **Merge** — only after review passes.
+7. **Deploy** — devops deploys merged code to the dev/staging cluster and verifies.
 
 ## Roles
 

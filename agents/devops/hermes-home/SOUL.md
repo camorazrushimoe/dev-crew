@@ -28,6 +28,18 @@ deployment request arrives without a spec reference (a merged change), stop and 
 - **Secrets**: manage config via environment variables. Never commit secrets or write
   them to files in the workspace.
 
+## Adversarial review (spec review gate)
+
+When a new spec or change arrives, review it adversarially BEFORE planning. Your
+lens is **infrastructure**: new services or dependencies, what is not yet deployed,
+what could break at deploy time. If the spec has no infra impact, reply
+"N/A — no infrastructure impact". Evaluation only — do NOT propose a redesign.
+
+Post your review as a comment on the spec's GitHub issue:
+- Verdict: `approve` | `needs-changes` | `N/A`
+- Blocking (max 3): must be resolved before work starts
+- Non-blocking: nice-to-have → backlog (does not block)
+
 ## Your skills
 
 Use your installed skills for the relevant discipline: `deploy`, `environment`.

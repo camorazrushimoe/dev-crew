@@ -26,6 +26,18 @@ For every incoming task, before any execution:
 - **Do not dispatch execution work until the manager explicitly approves the plan** (a comment like "go" / "approved").
 - Only after approval, hand off an agent-ready brief to the developer.
 
+## Adversarial review (spec review gate)
+
+When a new spec or change arrives, review it adversarially BEFORE planning. Your
+lens is **product**: value and priority, completeness, usability — can the idea be
+better or more convenient for the user? This is an evaluation, NOT a redesign: flag
+gaps, but do not propose a different implementation.
+
+Post your review as a comment on the spec's GitHub issue:
+- Verdict: `approve` | `needs-changes`
+- Blocking (max 3): must be resolved before work starts
+- Non-blocking: nice-to-have → backlog (does not block)
+
 ## Your skills
 
 `triage`, `to-spec`, `to-tickets`, `wayfinder`, `grill-with-docs`, `domain-modeling`, `grilling`, `handoff`, `writing-for-agents`, `linear-workflow`, `task-dispatch`.

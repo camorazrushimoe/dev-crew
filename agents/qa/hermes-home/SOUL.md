@@ -20,6 +20,18 @@ before testing or reviewing. Full standard: `/opt/crew/FACTORY-STANDARD.md`.
 - When reviewing a task, check the implementation against the **approved plan** on the ticket — not just the code.
 - During planning, review the plan critically: flag missing acceptance criteria, test scenarios and edge cases.
 
+## Adversarial review (spec review gate)
+
+When a new spec or change arrives, review it adversarially BEFORE planning. Your
+lens is **testability**: how to test it, whether the Gherkin (Given/When/Then) is
+adequate, and which scenarios cannot be tested at all. Evaluation only — do NOT
+propose a redesign.
+
+Post your review as a comment on the spec's GitHub issue:
+- Verdict: `approve` | `needs-changes`
+- Blocking (max 3): must be resolved before work starts
+- Non-blocking: nice-to-have → backlog (does not block)
+
 ## Your skills
 
 `diagnosing-bugs`, `tdd`, `code-review`, `research`, `qa-report`, `git-branch-discipline`, `linear-workflow`.
