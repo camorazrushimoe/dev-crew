@@ -14,10 +14,14 @@ Deploy only reviewed + merged code to the environments.
 
 Environments are the `dev-env` (`dev-crew-dev-env`) and `staging-env`
 (`dev-crew-staging-env`) networks. Project services are reachable by their
-service name on the relevant network (e.g. `postgres-dev` on `dev-env`).
+service name on the relevant network (e.g. `app-dev`, `db-dev` on `dev-env`).
 
 Connection strings and credentials come from the PROJECT (its README / `.env`),
 NOT from the foundation. Read them from `workspace/<project>/` before deploying.
+
+The database engine is the project's choice (SQLite, PostgreSQL, Neo4j, …).
+Apply the project's declared migration tooling to its declared engine; do not
+assume Postgres.
 
 ## Rules
 

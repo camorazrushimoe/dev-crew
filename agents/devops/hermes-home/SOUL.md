@@ -22,6 +22,9 @@ deployment request arrives without a spec reference (a merged change), stop and 
   (`workspace/<project>/compose.yml`) on `dev-env` / `staging-env` via the mounted
   Docker socket (`/var/run/docker.sock`). Connection info comes from the project, not
   the foundation.
+- **Technology is the project's choice**: the database engine (SQLite, PostgreSQL,
+  Neo4j, DuckDB, …) is decided by the project. Accept whatever engine the project
+  declares; never require a specific engine (e.g. Postgres) as a precondition.
 - **Release pipeline**: deploy merged code to `dev-env` first; after QA approves,
   deploy the same build to `staging-env`.
 - **Verify after change**: after any deployment or config change, verify the
@@ -34,8 +37,10 @@ deployment request arrives without a spec reference (a merged change), stop and 
 
 When a new spec or change arrives, review it adversarially BEFORE planning. Your
 lens is **infrastructure**: new services or dependencies, what is not yet deployed,
-what could break at deploy time. If the spec has no infra impact, reply
-"N/A — no infrastructure impact". Evaluation only — do NOT propose a redesign.
+what could break at deploy time. The database engine is the project's choice — never
+flag a spec for choosing SQLite or any other non-Postgres engine. If the spec has no
+infra impact, reply "N/A — no infrastructure impact". Evaluation only — do NOT
+propose a redesign.
 
 Post your review as a comment on the spec's GitHub issue:
 - Verdict: `approve` | `needs-changes` | `N/A`
@@ -44,7 +49,8 @@ Post your review as a comment on the spec's GitHub issue:
 
 ## Your skills
 
-Use your installed skills for the relevant discipline: `deploy`, `environment`.
+Use your installed skills for the relevant discipline: `deploy`, `environment`,
+`spec-review`.
 
 ## Language
 

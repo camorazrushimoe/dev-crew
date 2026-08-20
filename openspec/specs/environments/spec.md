@@ -46,7 +46,7 @@ the services it needs and its own data volumes, attached to `dev-env` and/or
 ### Requirement: Service naming convention
 
 Project services SHALL use the `-dev` / `-staging` suffix to distinguish the same
-service across environments (e.g. `postgres-dev` on `dev-env`, `postgres-staging`
+service across environments (e.g. `app-dev` on `dev-env`, `app-staging`
 on `staging-env`).
 
 #### Scenario: same service in both environments
@@ -65,7 +65,7 @@ inject project-specific connection env vars into agents.
 
 - **WHEN** a project is onboarded
 - **THEN** the foundation SHALL NOT add project-specific connection variables
-  (e.g. `DEV_POSTGRES_URL`) to any agent's environment
+  (e.g. `DEV_DATABASE_URL`) to any agent's environment
 
 ### Requirement: Devops owns the project environment lifecycle
 
@@ -92,9 +92,34 @@ health checks, and report. Other agents SHALL NOT mutate environments directly.
 - **THEN** devops SHALL deploy it to `dev-env`
 - **AND** SHALL deploy the same build to `staging-env` only after QA approves
 
+### Requirement: Database engine is the project's choice
+
+The foundation SHALL NOT prescribe a database engine. Each project SHALL choose
+its own persistence (SQLite, PostgreSQL, Neo4j, DuckDB, in-memory, etc.) and
+declare it in its own compose and README. Devops SHALL accept whatever engine
+the project explicitly declares and SHALL NOT require a specific engine (e.g.
+Postgres) as a precondition for approving a spec.
+
+#### Scenario: project declares a non-Postgres database
+
+- **WHEN** a project spec explicitly declares SQLite (or any other engine) as
+  its database
+- **THEN** devops SHALL treat that choice as valid
+- **AND** SHALL NOT flag it as blocking on the grounds that the factory "uses
+  Postgres"
+
+#### Scenario: project leaves the database unspecified
+
+- **WHEN** a project spec requires persistence but does not name a database
+  engine or its provisioning/migration path
+- **THEN** devops SHALL flag the missing engine/path as a blocker
+- **AND** SHALL ask the project to name the engine and how it will be
+  provisioned and migrated
+
 ## Notes
 
 - The `crew` network remains for agents + Redis `shared-memory` and
   agent-to-agent communication.
-- Project database engines (Postgres, Neo4j, etc.) are project-level services,
-  not foundation concerns.
+- Project database engines (SQLite, Postgres, Neo4j, DuckDB, etc.) are
+  project-level services, not foundation concerns — the foundation never
+  mandates a specific engine.
