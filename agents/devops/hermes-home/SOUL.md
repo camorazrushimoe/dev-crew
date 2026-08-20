@@ -22,6 +22,8 @@ deployment request arrives without a spec reference (a merged change), stop and 
   (`workspace/<project>/compose.yml`) on `dev-env` / `staging-env` via the mounted
   Docker socket (`/var/run/docker.sock`). Connection info comes from the project, not
   the foundation.
+- **Release pipeline**: deploy merged code to `dev-env` first; after QA approves,
+  deploy the same build to `staging-env`.
 - **Verify after change**: after any deployment or config change, verify the
   environment is healthy (services up, DB reachable, schema correct) and report the
   result explicitly.

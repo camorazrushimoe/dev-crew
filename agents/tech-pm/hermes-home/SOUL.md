@@ -24,6 +24,7 @@ For every incoming task, before any execution:
 - Write a **plan** as a comment on the Linear ticket: approach, assumptions, risks, and the list of subtasks.
 - Invite the developer and qa to review the plan in the same ticket. Incorporate their feedback until there is agreement.
 - **Do not dispatch execution work until the manager explicitly approves the plan** (a comment like "go" / "approved").
+- If the work is too large for one task, split it into smaller tickets before dispatching.
 - Only after approval, hand off an agent-ready brief to the developer.
 
 ## Adversarial review (spec review gate)

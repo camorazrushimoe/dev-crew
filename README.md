@@ -53,15 +53,33 @@ flowchart TB
 - **Agent ↔ agent** — any agent can address another through the same door (container DNS inside the `crew` network).
 - **Shared bus** — `shared-memory` (Redis) is the common action registry for broadcast events between agents.
 
-## Planning gate (discuss before code)
+## Workflow (end to end)
 
-Agents do **not** start coding on receipt. Every task passes through a planning phase,
-encoded in each agent's SOUL:
+Agents follow a spec-first pipeline. Every task passes through these stages:
 
-1. `tech-pm` writes a plan as a Linear ticket comment (approach, assumptions, risks, subtasks).
-2. `developer` + `qa` review the plan in the comments, flag wrong assumptions.
-3. **Manager approves explicitly** (comment "go"/"approved") — manual gate.
-4. Only then does `developer` implement (feature branch → PR), and `qa` verify against the plan.
+1. **Spec** — manager + tech-pm write the OpenSpec spec.
+2. **Adversarial review** — every involved agent reviews the spec from its own
+   lens (product / engineering / infra / testability) and posts a comment on the
+   spec's GitHub issue: a verdict (`approve` / `needs-changes`) + at most 3
+   blocking findings. Evaluation, not redesign.
+3. **Plan & decompose** — tech-pm turns the reviewed spec into a plan; if the work
+   is too large, it is split into smaller tickets (Linear). The manager decides.
+4. **Implement** — developer implements a piece on a `feature/<ticket>-slug`
+   branch, opens a PR, and waits for review (does not self-merge).
+5. **Code review** — qa + manager review the PR against the spec.
+6. **Merge** — only after review passes.
+7. **Deploy to dev** — devops deploys the merged code to `dev-env` (first test cluster).
+8. **QA testing** — qa updates the test plans, runs tests, records a test report.
+   Bugs are published to the shared-memory bus (`bug.found` + debugging info).
+9. **QA approve** — qa approves the build and signals devops.
+10. **Deploy to staging** — devops deploys the approved build to `staging-env`.
+
+### Escape hatch (critical override)
+
+In a critical situation the manager MAY override the workflow (skip review, deploy
+directly, etc.) by explicitly approving the override. Every override is recorded
+immediately as **tech debt** — a GitHub issue labelled `tech-debt` — so the
+shortcut is never silent.
 
 Linear ticket comments are the discussion channel (persistent + human-visible);
 Redis stays the signal/notification layer.

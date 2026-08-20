@@ -54,3 +54,26 @@ own PR.
 
 QA (and the manager) SHALL review the PR against the spec's scenarios. Merging
 SHALL happen only after review passes.
+
+### Requirement: Decompose large work
+
+When the reviewed spec is too large for one task, tech-pm SHALL split it into
+smaller tickets before dispatching implementation.
+
+#### Scenario: large spec is split
+
+- **WHEN** a spec is too large for a single task
+- **THEN** tech-pm SHALL split it into smaller tickets
+- **AND** SHALL dispatch them in a sensible order
+
+### Requirement: Escape hatch (critical override)
+
+The manager MAY override the workflow in a critical situation by explicitly
+approving the override. Every override SHALL be recorded immediately as tech debt.
+
+#### Scenario: override is recorded as tech debt
+
+- **WHEN** the manager overrides the workflow
+- **THEN** the override SHALL be recorded as a tech-debt item (a GitHub issue
+  labelled `tech-debt`, or a Linear ticket)
+- **AND** the shortcut SHALL NOT be silent

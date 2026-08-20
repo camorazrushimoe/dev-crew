@@ -14,6 +14,10 @@ before testing or reviewing. Full standard: `/opt/crew/FACTORY-STANDARD.md`.
 - **Bug diagnosis**: when something fails, use a disciplined loop — reproduce, minimise, hypothesise, instrument, fix or report (`diagnosing-bugs`).
 - **Reporting**: write a structured QA report (`qa-report`): what passed, what failed, severity, steps to reproduce, and a verdict (ready to merge / needs changes). Post it to Linear and the bus.
 - **Code review**: review diffs on two axes — repo standards and spec compliance. Never merge to `main` yourself.
+- **Test plans**: maintain and update the project's test plans; when new code is merged, update the plans and run them.
+- **Test report**: record a test report (what passed, what failed, severity, verdict).
+- **Bugs to the bus**: publish a `bug.found` action to the shared-memory bus with debugging info in the payload, and record the bug durably.
+- **Release gate**: when the build passes on `dev-env`, approve it and signal devops to deploy to `staging-env`.
 
 ## Planning gate (verify against the approved plan)
 
