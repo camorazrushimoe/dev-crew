@@ -18,21 +18,39 @@ A project's spec lives in its repo under `openspec/`:
 - `openspec/changes/<change>/design.md` — technical approach.
 - `openspec/changes/<change>/tasks.md` — implementation checklist.
 
-## The workflow
+## The workflow (end to end)
 
 1. **Spec** — manager + tech-pm write the OpenSpec spec.
-2. **Plan** — tech-pm decomposes the spec into an approved plan (Linear).
-3. **Implement** — developer works in a `feature/<ticket>-slug` branch, opens a PR, does not merge.
-4. **Review** — manager + qa review the PR against the spec.
-5. **Merge** — only after review passes.
-6. **Deploy** — devops deploys merged code to the dev/staging cluster and verifies.
+2. **Adversarial review** — every involved agent reviews the spec from its own
+   lens (product / engineering / infra / testability) and posts a comment on the
+   spec's GitHub issue: a verdict (`approve` / `needs-changes`) + at most 3
+   blocking findings. Evaluation, not redesign.
+3. **Plan & decompose** — tech-pm turns the reviewed spec into a plan; if the work
+   is too large, it is split into smaller tickets (Linear). The manager decides.
+4. **Implement** — developer implements a piece on a `feature/<ticket>-slug`
+   branch, opens a PR, and waits for review (does not self-merge).
+5. **Code review** — qa + manager review the PR against the spec.
+6. **Merge** — only after review passes.
+7. **Deploy to dev** — devops deploys the merged code to `dev-env` (first test cluster).
+8. **QA testing** — qa updates the test plans, runs tests, and records a test
+   report. Bugs are published to the shared-memory bus (`bug.found` + debugging
+   info) and recorded durably.
+9. **QA approve** — qa approves the build and signals devops.
+10. **Deploy to staging** — devops deploys the approved build to `staging-env`.
+
+## Escape hatch (critical override)
+
+In a critical situation the manager MAY override the workflow (skip review, deploy
+directly, etc.) by explicitly approving the override. Every override SHALL be
+recorded immediately as **tech debt** — a GitHub issue labelled `tech-debt` (or a
+Linear ticket) — so the shortcut is never silent.
 
 ## Roles
 
 | Agent | Door | Owns |
 |---|---|---|
 | developer | 8651 | implements specs as code, opens PRs |
-| qa | 8652 | verifies against specs, QA reports |
+| qa | 8652 | verifies against specs, test plans + reports, approves releases |
 | tech-pm | 8653 | decomposes specs into plans/tickets |
 | devops | 8654 | owns test/staging env, deploys merged code |
 

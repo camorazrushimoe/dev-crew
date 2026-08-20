@@ -14,11 +14,23 @@ spec? Who wrote it?" before coding, testing, or planning.
 - **THEN** the agent SHALL NOT start work
 - **AND** SHALL ask the manager or tech-pm to point to the spec
 
+### Requirement: Adversarial review before planning
+
+Before any plan or implementation, every involved agent SHALL adversarially
+review the spec (see the `adversarial-review` capability).
+
+#### Scenario: spec is reviewed before planning
+
+- **WHEN** a new spec or change arrives
+- **THEN** the involved agents SHALL post their adversarial reviews (GitHub issue)
+- **AND** planning SHALL begin only after the reviews are posted
+
 ### Requirement: Plan before code
 
-Every task SHALL pass through a planning phase before execution:
+After the adversarial review, every task SHALL pass through a planning phase
+before execution:
 
-`task → tech-pm writes plan (Linear comment) → developer + qa review →
+`task → adversarial review → tech-pm writes plan → developer + qa review →
 manager approves → developer implements → qa verifies → merge → devops deploys`
 
 #### Scenario: no approved plan blocks implementation
@@ -42,3 +54,26 @@ own PR.
 
 QA (and the manager) SHALL review the PR against the spec's scenarios. Merging
 SHALL happen only after review passes.
+
+### Requirement: Decompose large work
+
+When the reviewed spec is too large for one task, tech-pm SHALL split it into
+smaller tickets before dispatching implementation.
+
+#### Scenario: large spec is split
+
+- **WHEN** a spec is too large for a single task
+- **THEN** tech-pm SHALL split it into smaller tickets
+- **AND** SHALL dispatch them in a sensible order
+
+### Requirement: Escape hatch (critical override)
+
+The manager MAY override the workflow in a critical situation by explicitly
+approving the override. Every override SHALL be recorded immediately as tech debt.
+
+#### Scenario: override is recorded as tech debt
+
+- **WHEN** the manager overrides the workflow
+- **THEN** the override SHALL be recorded as a tech-debt item (a GitHub issue
+  labelled `tech-debt`, or a Linear ticket)
+- **AND** the shortcut SHALL NOT be silent

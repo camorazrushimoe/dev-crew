@@ -86,6 +86,12 @@ health checks, and report. Other agents SHALL NOT mutate environments directly.
 - **THEN** it SHALL request it from devops
 - **AND** SHALL NOT touch the environment directly
 
+#### Scenario: stage progression
+
+- **WHEN** a change is merged
+- **THEN** devops SHALL deploy it to `dev-env`
+- **AND** SHALL deploy the same build to `staging-env` only after QA approves
+
 ## Notes
 
 - The `crew` network remains for agents + Redis `shared-memory` and
