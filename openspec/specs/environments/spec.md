@@ -6,8 +6,8 @@
 
 The foundation SHALL provide two isolated, empty networks per instance:
 
-- `dev-env` — the dev/CI environment
-- `staging-env` — the pre-production environment
+- `dev-env` — the developer sandbox ("Dev Cluster")
+- `staging-env` — the pre-prod gate (QA-verified)
 
 These SHALL be declared by the foundation compose file with stable, explicit
 names (`dev-crew-dev-env` and `dev-crew-staging-env`) and SHALL start empty
@@ -67,30 +67,43 @@ inject project-specific connection env vars into agents.
 - **THEN** the foundation SHALL NOT add project-specific connection variables
   (e.g. `DEV_DATABASE_URL`) to any agent's environment
 
-### Requirement: Devops owns the project environment lifecycle
+### Requirement: Developer owns the dev-env sandbox
 
-Devops SHALL own the project environment lifecycle: bring up
-`workspace/<project>/compose.yml` in the target network, seed base data, run
-health checks, and report. Other agents SHALL NOT mutate environments directly.
+`dev-env` SHALL be the developer's sandbox ("Dev Cluster"). The developer SHALL
+have Docker daemon access and SHALL be able to bring up, test, iterate and tear
+down its own project services on `dev-env` before opening a PR. The developer
+SHALL NOT deploy to `staging-env`.
+
+#### Scenario: developer verifies before PR
+
+- **WHEN** a developer implements a change
+- **THEN** it SHALL be able to `docker compose up` its project on `dev-env`
+- **AND** SHALL verify the service is healthy before opening the PR
+
+#### Scenario: developer cannot touch pre-prod
+
+- **WHEN** a developer attempts to deploy to `staging-env`
+- **THEN** it SHALL NOT do so
+- **AND** SHALL request a staging deployment from devops
+
+### Requirement: Devops owns the staging-env (pre-prod) gate
+
+Devops SHALL own `staging-env` (pre-prod): bring up
+`workspace/<project>/compose.yml` there, run migrations, seed base data, run
+health checks, and report. Devops SHALL deploy only merged, reviewed code to
+`staging-env`. QA SHALL verify release candidates on `staging-env`.
 
 #### Scenario: environment onboarding
 
 - **WHEN** a project is onboarded
-- **THEN** devops SHALL bring up the project's compose in `dev-env`, seed base
-  data, and verify health
-- **AND** SHALL repeat in `staging-env` when a release candidate is ready
-
-#### Scenario: other agents do not mutate env
-
-- **WHEN** a non-devops agent needs a deployment or config change
-- **THEN** it SHALL request it from devops
-- **AND** SHALL NOT touch the environment directly
+- **THEN** devops SHALL bring up the project's compose in `staging-env`, seed
+  base data, and verify health
 
 #### Scenario: stage progression
 
-- **WHEN** a change is merged
-- **THEN** devops SHALL deploy it to `dev-env`
-- **AND** SHALL deploy the same build to `staging-env` only after QA approves
+- **WHEN** a change is merged and QA approves the build on `staging-env`
+- **THEN** the build SHALL be treated as a verified release candidate
+- **AND** devops SHALL NOT deploy unreviewed or unmerged code to `staging-env`
 
 ### Requirement: Database engine is the project's choice
 

@@ -12,6 +12,7 @@ before coding. Full standard: `/opt/crew/FACTORY-STANDARD.md`.
 - **Branch strategy**: never commit directly to `main`/`master`. Every task gets its own feature branch named `feature/<ticket>-<slug>` (e.g. `feature/BON-15-login`). Create the branch, commit to it, open a PR.
 - **Tests**: write tests for everything you build. Use test-driven development (red-green-refactor) — a failing test first, then the implementation.
 - **Architecture**: keep modules deep (a lot of behaviour behind a small interface), respect seams and existing ADRs, and add no speculative features.
+- **Dev cluster (dev-env)**: you own the `dev-env` sandbox. Before opening a PR, `docker compose up` your project on `dev-env` and verify it is healthy (see the `deploy-dev` skill). This is your local Docker — build, test, iterate, break freely. You SHALL NOT deploy to `staging-env` — that is devops's pre-prod gate; request staging from devops.
 - **Code review**: before opening a PR, self-review the diff on two axes — does it follow the repo's standards, and does it faithfully implement the ticket/spec.
 - **Reporting**: when you finish a task, comment on the Linear ticket (status, what changed, how to verify) and move it to the next state.
 
@@ -35,7 +36,7 @@ Post your review as a comment on the spec's GitHub issue:
 
 ## Your skills
 
-Use your installed skills for the relevant discipline: `tdd`, `implement`, `code-review`, `codebase-design`, `resolving-merge-conflicts`, `prototype`, `research`, `git-branch-discipline`, `linear-workflow`.
+Use your installed skills for the relevant discipline: `tdd`, `implement`, `code-review`, `codebase-design`, `resolving-merge-conflicts`, `prototype`, `research`, `git-branch-discipline`, `linear-workflow`, `deploy-dev`.
 
 ## Language
 

@@ -9,10 +9,10 @@ with a distinct role, webhook door, and host port:
 
 | Role | Door (host) | Owns |
 |---|---|---|
-| `developer` | `8651` | Implements specs as code, opens PRs |
-| `qa` | `8652` | Verifies against specs, writes QA reports |
+| `developer` | `8651` | Implements specs as code; tests on `dev-env`; opens PRs |
+| `qa` | `8652` | Verifies release candidates on `staging-env`; writes QA reports |
 | `tech-pm` | `8653` | Decomposes specs into plans/tickets |
-| `devops` | `8654` | Owns test/staging env, deploys merged code |
+| `devops` | `8654` | Owns `staging-env` (pre-prod); deploys merged, reviewed code |
 
 #### Scenario: every agent is reachable on a distinct door
 
@@ -37,6 +37,9 @@ Each agent SHALL mount the shared workspace and tooling:
 `hermes-home` → `/opt/data`, role skills → `/opt/data/skills/dev-crew` (read-only),
 `crew/` → `/opt/crew` (read-only), `workspace/` → `/workspace`. The workspace SHALL
 be read-only for `tech-pm` and read-write for `developer`, `qa`, and `devops`.
+The `developer` and `devops` agents SHALL additionally mount the host Docker
+socket (`/var/run/docker.sock`) so they can deploy to `dev-env` and `staging-env`
+respectively.
 
 ### Requirement: English-only output
 

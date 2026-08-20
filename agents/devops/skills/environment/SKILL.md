@@ -1,15 +1,16 @@
 # Environment
 
-You own the dev and staging environments end-to-end.
+You own the `staging-env` (pre-prod) environment end-to-end. `dev-env` is the
+developer's sandbox — not yours.
 
 ## Topology
 
 The foundation provides two empty, project-agnostic networks:
 
-| Network | Compose name | Purpose |
-|---|---|---|
-| dev-env | `dev-crew-dev-env` | dev/CI — developer builds and breaks freely |
-| staging-env | `dev-crew-staging-env` | pre-prod — qa verifies release candidates |
+| Network | Compose name | Owner | Purpose |
+|---|---|---|---|
+| dev-env | `dev-crew-dev-env` | **developer** | sandbox — developer builds/breaks freely |
+| staging-env | `dev-crew-staging-env` | **you (devops)** | pre-prod gate — QA verifies release candidates |
 
 The `crew` network is for agents + Redis `shared-memory` only. No project
 services run on `crew`.
@@ -24,12 +25,12 @@ Accept whatever engine the project declares; never block a spec for choosing
 SQLite instead of Postgres (or the reverse). Your job is to make the project's
 declared stack deployable and observable, not to impose one.
 
-## Onboarding a project environment
+## Onboarding a project environment (staging-env)
 
 1. Read `workspace/<project>/compose.yml` (and the project's own README for
    connection info and seed steps).
-2. Bring it up against the host Docker daemon (the socket is mounted read-only
-   at `/var/run/docker.sock`):
+2. Bring it up on `staging-env` against the host Docker daemon (the socket is
+   mounted read-only at `/var/run/docker.sock`):
    - `docker compose -f /workspace/<project>/compose.yml up -d`
    - If the `compose` plugin is missing in this container, use plain `docker`
      commands or ask the manager to run compose from the host.
@@ -38,8 +39,8 @@ declared stack deployable and observable, not to impose one.
 
 ## Health check
 
-- Reach each project service on `dev-env` / `staging-env` by its service name
-  (e.g. `app-dev`, `db-dev`), using the connection info from the project.
+- Reach each project service on `staging-env` by its service name
+  (e.g. `app-staging`, `db-staging`), using the connection info from the project.
 
 ## Config changes
 
