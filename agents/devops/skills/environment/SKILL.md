@@ -18,6 +18,12 @@ Projects bring their own services via `workspace/<project>/compose.yml` and
 attach to these networks with `external: true`. There are NO fixed database
 services in the foundation.
 
+**Technology is the project's choice.** The database engine (SQLite, PostgreSQL,
+Neo4j, DuckDB, in-memory, …) is decided by the project, not the foundation.
+Accept whatever engine the project declares; never block a spec for choosing
+SQLite instead of Postgres (or the reverse). Your job is to make the project's
+declared stack deployable and observable, not to impose one.
+
 ## Onboarding a project environment
 
 1. Read `workspace/<project>/compose.yml` (and the project's own README for
@@ -33,7 +39,7 @@ services in the foundation.
 ## Health check
 
 - Reach each project service on `dev-env` / `staging-env` by its service name
-  (e.g. `postgres-dev`), using the connection info from the project.
+  (e.g. `app-dev`, `db-dev`), using the connection info from the project.
 
 ## Config changes
 
