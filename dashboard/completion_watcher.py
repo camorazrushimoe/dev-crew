@@ -108,7 +108,6 @@ class Watcher:
     def __init__(self):
         self.redis = Redis()
         self.linear = Linear()
-        self.started = datetime.now()
         # per-agent: byte offset into the log + in-flight turn
         self.offsets = {a: None for a in AGENTS}
         self.turns = {a: None for a in AGENTS}
@@ -215,9 +214,9 @@ class Watcher:
 
     def poll_agent(self, agent):
         for line in self._read_new_lines(agent):
+            # Offset tracking alone handles first-run and truncation (see
+            # _read_new_lines), so no wall-clock timestamp filter here.
             ts = parse_ts(line)
-            if ts and ts < self.started:
-                continue  # skip historical lines (first run / rotation)
             if INBOUND_RE.search(line):
                 if self.turns[agent] is not None:
                     # An inbound without a matching response: flush the old turn
