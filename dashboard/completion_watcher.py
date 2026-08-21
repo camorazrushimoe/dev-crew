@@ -23,7 +23,7 @@ import urllib.request
 import urllib.error
 from datetime import datetime
 
-from factorybus import Redis, Linear, publish, AGENTS_BASE, LINEAR_STATES
+from factorybus import Redis, Linear, publish, AGENTS_BASE, LINEAR_STATES, getenv, sign
 
 AGENTS = ["developer", "qa", "tech-pm", "devops"]
 
@@ -39,9 +39,10 @@ API_CALLS_RE = re.compile(r"api_calls=(\d+)")
 # PR hint for the "success + PR -> In Review" rule (best-effort).
 PR_RE = re.compile(r"pull request|opened (a |the )?PR|PR\s*#\d+|/pull/\d+", re.I)
 
-STALE_MINUTES = float(os.environ.get("WATCHER_STALE_MINUTES", "30"))
-POLL_INTERVAL = float(os.environ.get("WATCHER_POLL_INTERVAL", "2.0"))
-MANAGER_WEBHOOK_URL = os.environ.get("MANAGER_WEBHOOK_URL", "").strip()
+STALE_MINUTES = float(getenv("WATCHER_STALE_MINUTES", "30"))
+POLL_INTERVAL = float(getenv("WATCHER_POLL_INTERVAL", "2.0"))
+MANAGER_WEBHOOK_URL = getenv("MANAGER_WEBHOOK_URL", "").strip()
+MANAGER_WEBHOOK_SECRET = getenv("MANAGER_WEBHOOK_SECRET", "").strip()
 
 # Agent log path: AGENTS_BASE/<agent>/hermes-home/logs/agent.log
 def log_path(agent):
@@ -87,15 +88,24 @@ class Turn:
 
 
 def manager_ping(payload):
-    """Best-effort POST of the structured payload to the manager webhook."""
+    """Best-effort POST of a human-readable completion line to the manager webhook."""
     if not MANAGER_WEBHOOK_URL:
         return None
+    t = payload.get("ticket") or "no-ticket"
+    cost = ""
+    if payload.get("duration_s") is not None:
+        cost = f", {payload['duration_s']:.0f}s, {payload.get('api_calls')} calls"
+    text = (f"🏭 Dev Crew · {payload.get('agent')} finished {t} "
+            f"({payload.get('status')}{cost})")
+    if payload.get("summary"):
+        text += f"\n{payload['summary']}"
+    body = json.dumps({"text": text})
+    headers = {"Content-Type": "application/json"}
+    if MANAGER_WEBHOOK_SECRET:
+        headers["X-Hub-Signature-256"] = sign(MANAGER_WEBHOOK_SECRET, body)
     try:
         req = urllib.request.Request(
-            MANAGER_WEBHOOK_URL,
-            data=json.dumps(payload).encode(),
-            headers={"Content-Type": "application/json"},
-            method="POST",
+            MANAGER_WEBHOOK_URL, data=body.encode(), headers=headers, method="POST",
         )
         with urllib.request.urlopen(req, timeout=10) as r:
             return r.status
