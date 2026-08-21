@@ -55,16 +55,25 @@ own PR.
 QA (and the manager) SHALL review the PR against the spec's scenarios. Merging
 SHALL happen only after review passes.
 
-### Requirement: Decompose large work
+### Requirement: Linear Projects are the grouping unit
 
-When the reviewed spec is too large for one task, tech-pm SHALL split it into
-smaller tickets before dispatching implementation.
+A product effort SHALL be represented as a Linear **Project**, not as a synthetic
+parent "epic" ticket. tech-pm SHALL create the Project and link every related
+ticket to it. Tickets MAY still declare blocking edges between each other; the
+Project is the filter and progress view.
 
-#### Scenario: large spec is split
+#### Scenario: new product effort becomes a Project
+
+- **WHEN** tech-pm decomposes a reviewed spec into implementation tickets
+- **THEN** tech-pm SHALL create (or reuse) a Linear Project for the effort
+- **AND** SHALL link every ticket in the effort to that Project
+- **AND** SHALL NOT require an artificial parent epic ticket solely for grouping
+
+#### Scenario: large work is still split
 
 - **WHEN** a spec is too large for a single task
-- **THEN** tech-pm SHALL split it into smaller tickets
-- **AND** SHALL dispatch them in a sensible order
+- **THEN** tech-pm SHALL split it into smaller tickets under the same Project
+- **AND** SHALL dispatch them in a sensible order (blocking edges)
 
 ### Requirement: Escape hatch (critical override)
 
