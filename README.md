@@ -64,15 +64,16 @@ Agents follow a spec-first pipeline. Every task passes through these stages:
    blocking findings. Evaluation, not redesign.
 3. **Plan & decompose** — tech-pm turns the reviewed spec into a plan; if the work
    is too large, it is split into smaller tickets (Linear). The manager decides.
-4. **Implement** — developer implements a piece on a `feature/<ticket>-slug`
-   branch, opens a PR, and waits for review (does not self-merge).
+4. **Implement + verify on dev-env** — developer implements a piece on a
+   `feature/<ticket>-slug` branch, brings it up on `dev-env` (its sandbox) and
+   verifies it runs, then opens a PR and waits for review (does not self-merge).
 5. **Code review** — qa + manager review the PR against the spec.
 6. **Merge** — only after review passes.
-7. **Deploy to dev** — devops deploys the merged code to `dev-env` (first test cluster).
-8. **QA testing** — qa updates the test plans, runs tests, records a test report.
-   Bugs are published to the shared-memory bus (`bug.found` + debugging info).
-9. **QA approve** — qa approves the build and signals devops.
-10. **Deploy to staging** — devops deploys the approved build to `staging-env`.
+7. **Deploy to staging** — devops deploys the merged code to `staging-env` (pre-prod).
+8. **QA testing** — qa verifies the release candidate on `staging-env`, updates the
+   test plans, runs tests, records a test report. Bugs are published to the
+   shared-memory bus (`bug.found` + debugging info).
+9. **QA approve** — qa approves the build on `staging-env`.
 
 ### Escape hatch (critical override)
 
@@ -88,10 +89,10 @@ Redis stays the signal/notification layer.
 
 The factory ships with two empty networks any project can use — no per-project setup:
 
-| Environment | Network (name) |
-|-------------|----------------|
-| `dev-env` | `dev-crew-dev-env` |
-| `staging-env` | `dev-crew-staging-env` |
+| Environment | Network (name) | Owner | Purpose |
+|-------------|----------------|-------|---------|
+| `dev-env` | `dev-crew-dev-env` | developer | sandbox — build/test/break freely (pre-PR) |
+| `staging-env` | `dev-crew-staging-env` | devops | pre-prod gate — merged/reviewed code, QA-verified |
 
 Each project brings its own services via `workspace/<project>/compose.yml` and
 attaches to `dev-env` / `staging-env` via `external: true`. Connection strings and

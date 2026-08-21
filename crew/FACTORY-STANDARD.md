@@ -28,16 +28,16 @@ A project's spec lives in its repo under `openspec/`:
 3. **Plan & decompose** — tech-pm turns the reviewed spec into a plan and a Linear
    **Project** (the grouping unit). Large work is split into smaller tickets linked
    to that Project. The manager decides.
-4. **Implement** — developer implements a piece on a `feature/<ticket>-slug`
-   branch, opens a PR, and waits for review (does not self-merge).
+4. **Implement + verify on dev-env** — developer implements a piece on a
+   `feature/<ticket>-slug` branch, brings it up on `dev-env` (its sandbox) and
+   verifies it runs, then opens a PR and waits for review (does not self-merge).
 5. **Code review** — qa + manager review the PR against the spec.
 6. **Merge** — only after review passes.
-7. **Deploy to dev** — devops deploys the merged code to `dev-env` (first test cluster).
-8. **QA testing** — qa updates the test plans, runs tests, and records a test
-   report. Bugs are published to the shared-memory bus (`bug.found` + debugging
-   info) and recorded durably.
-9. **QA approve** — qa approves the build and signals devops.
-10. **Deploy to staging** — devops deploys the approved build to `staging-env`.
+7. **Deploy to staging** — devops deploys the merged code to `staging-env` (pre-prod).
+8. **QA testing** — qa verifies the release candidate on `staging-env`, updates the
+   test plans, runs tests, and records a test report. Bugs are published to the
+   shared-memory bus (`bug.found` + debugging info) and recorded durably.
+9. **QA approve** — qa approves the build on `staging-env`.
 
 ## Linear Projects (not synthetic epics)
 
@@ -78,14 +78,21 @@ directly, etc.) by explicitly approving the override. Every override SHALL be
 recorded immediately as **tech debt** — a GitHub issue labelled `tech-debt` (or a
 Linear ticket) — so the shortcut is never silent.
 
+## Environments
+
+| Environment | Network (name) | Owner | Purpose |
+|---|---|---|---|
+| `dev-env` | `dev-crew-dev-env` | developer | sandbox — build, test, iterate, break freely (pre-PR) |
+| `staging-env` | `dev-crew-staging-env` | devops | pre-prod gate — merged/reviewed code, QA-verified |
+
 ## Roles
 
 | Agent | Door | Owns |
 |---|---|---|
-| developer | 8651 | implements specs as code, opens PRs |
-| qa | 8652 | verifies against specs, test plans + reports, approves releases |
+| developer | 8651 | implements specs as code, tests on `dev-env`, opens PRs |
+| qa | 8652 | verifies release candidates on `staging-env`, test plans + reports |
 | tech-pm | 8653 | decomposes specs into plans/tickets under Linear Projects |
-| devops | 8654 | owns test/staging env, deploys merged code |
+| devops | 8654 | owns `staging-env` (pre-prod), deploys merged code |
 
 ## Language
 
