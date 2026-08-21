@@ -35,3 +35,12 @@ agents:
       base_url: ""
       api_key: ""
       model: ""
+
+  devops:
+    github:
+      token: ""
+      username: ""
+    llm:
+      base_url: ""
+      api_key: ""
+      model: ""

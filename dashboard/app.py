@@ -17,16 +17,21 @@ import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.request import urlopen
 
+import factorybus
+
 BASE = os.path.expanduser("~/Projects/dev-crew/agents")
 AGENTS = {
     "developer": ("Dev Crew Developer", 8651),
     "qa":         ("Dev Crew QA", 8652),
     "tech-pm":    ("Dev Crew Tech PM", 8653),
+    "devops":     ("Dev Crew DevOps", 8654),
 }
 REDIS_HOST = "localhost"
 REDIS_PORT = 6379
 PORT = 8660
 POLL_INTERVAL = 2.0
+
+linear = factorybus.Linear()
 
 
 # --- Minimal RESP (Redis) client, stdlib only -----------------------------
@@ -162,6 +167,43 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, *a):
         pass
 
+    def _send_json(self, obj):
+        payload = json.dumps(obj).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
+
+    def _build_run(self, project_name):
+        """Run-supervision view: a run == a Linear Project."""
+        issues = []
+        if linear.configured and project_name:
+            proj = linear.project_issues(project_name)
+            if proj:
+                for i in (proj.get("issues") or {}).get("nodes", []):
+                    issues.append({
+                        "identifier": i.get("identifier"),
+                        "title": i.get("title"),
+                        "state": (i.get("state") or {}).get("name"),
+                        "assignee": (i.get("assignee") or {}).get("name"),
+                    })
+        agents = []
+        for agent in AGENTS:
+            raw = redis.cmd("GET", f"status:{agent}")
+            agents.append(json.loads(raw) if raw else {"agent": agent, "state": "down"})
+        bus = []
+        evs = redis.cmd("LRANGE", "bus:events", 0, 99) or []
+        for e in evs:
+            try:
+                d = json.loads(e)
+                if d.get("action") in ("task.started", "task.finished", "task.stale"):
+                    bus.append(d)
+            except Exception:
+                pass
+        return {"project": project_name, "issues": issues,
+                "agents": agents, "bus": bus}
+
     def do_GET(self):
         if self.path == "/api/status":
             body = []
@@ -187,6 +229,20 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Content-Length", str(len(payload)))
             self.end_headers()
             self.wfile.write(payload)
+            return
+        if self.path == "/api/projects":
+            try:
+                projects = linear.projects() if linear.configured else []
+            except Exception as e:
+                projects = []
+            self._send_json({"projects": projects})
+            return
+        if self.path.startswith("/api/run"):
+            # ?project=<name> (URL-encoded). A "run" is a Linear Project.
+            from urllib.parse import urlparse, parse_qs, unquote
+            qs = parse_qs(urlparse(self.path).query)
+            name = unquote((qs.get("project") or [""])[0])
+            self._send_json(self._build_run(name))
             return
         if self.path in ("/", "/index.html"):
             p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "index.html")

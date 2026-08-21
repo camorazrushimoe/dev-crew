@@ -43,6 +43,12 @@ flowchart TB
 - **Agents** — isolated containers, each with its own Hermes runtime, tools and SOUL.
 - **shared-memory** — Redis: message bus (pub/sub + inbox queues) and shared state.
 - **entry point** — `crew-send.py` signs a message and POSTs it to any agent's webhook door.
+- **completion watcher** — `dashboard/completion_watcher.py` tails each gateway log and turns
+  inbound/response into deterministic `task.started` / `task.finished` / `task.stale` bus
+  events, plus best-effort Linear auto-comment/state-move and a manager webhook ping
+  (`task-completion` spec).
+- **dashboard** — `dashboard/app.py` health view + run-supervision view (a run = a Linear
+  Project: tickets + states + assignees + agent activity + cost).
 - **workspace** — a shared bind-mounted directory (`./workspace:/workspace`) where code lives.
   Developer and qa have read/write, tech-pm read-only.
 - **Generic environments** — project-agnostic dev/staging networks (see below).

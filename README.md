@@ -100,11 +100,14 @@ credentials live in the project, not the foundation.
 ## Project layout
 
 ```
-docker-compose.yml          # the whole team: 3 agents + Redis + clusters
+docker-compose.yml          # the whole team: 4 agents + Redis + clusters
 agents/<name>/hermes-home/  # isolated home per agent (config.yaml + SOUL.md)
 crew/crew-send.py           # door client — send a message to any agent
 crew/agents.json            # agent registry (urls + secrets, gitignored)
 bus/action-schema.json      # message schema for the bus
+dashboard/app.py            # observability dashboard + run-supervision view
+dashboard/factorybus.py     # shared Redis/Linear clients (stdlib only)
+dashboard/completion_watcher.py  # deterministic task hooks (start/finish/stale)
 tokens/tokens.example.yaml  # per-agent tokens template
 workspace/                  # shared code area (mounted into agents; gitignored)
 ```
@@ -125,16 +128,27 @@ python3 crew/crew-send.py developer "do this task"
 docker exec dev-crew-developer python3 /opt/crew/crew-send.py qa "request" --container
 ```
 
-Doors map to host ports: `developer` 8651, `qa` 8652, `tech-pm` 8653.
+Doors map to host ports: `developer` 8651, `qa` 8652, `tech-pm` 8653, `devops` 8654.
 Agent registry: `crew/agents.json` (real, gitignored) + `crew/agents.example.json` (template).
 
 ## Dashboard (observability)
 
 ```bash
-python3 dashboard/app.py     # then open http://localhost:8660
+python3 dashboard/app.py              # team status → http://localhost:8660
+python3 dashboard/completion_watcher.py  # deterministic task hooks (separate process)
 ```
 
-Live team view: which agents are up, their state (`working` / `idle` / `down`) and the current task. A reporter loop polls each agent's `/health` + gateway log and writes status/activity to Redis (`shared-memory`). The dashboard renders it as a live page (auto-refresh every 2s).
+Live team view: which agents are up, their state (`working` / `idle` / `down`) and the
+current task. A reporter loop polls each agent's `/health` + gateway log and writes
+status/activity to Redis (`shared-memory`). The dashboard renders it as a live page
+(auto-refresh every 2s) plus a **run-supervision** view (a run = a Linear Project:
+tickets + states + assignees + agent activity + token/call cost).
+
+The **completion watcher** is the deterministic task-hooks runtime
+(`task-completion` spec): it tails each gateway log and, on inbound/response,
+publishes `task.started` / `task.finished` / `task.stale` to the bus, best-effort
+auto-comments Linear and moves ticket state, and pings the manager webhook
+(`MANAGER_WEBHOOK_URL`). Configure via `.env` (`LINEAR_API_KEY`, `WATCHER_STALE_MINUTES`).
 
 ## Specs (OpenSpec)
 
@@ -152,5 +166,5 @@ Golden rule: **no spec → no work** (see `crew/FACTORY-STANDARD.md`).
 ## Status
 
 Foundation: agents + Redis + universal clusters + planning gate are wired up
-(see `docs/architecture.md` and the Linear epic). Next: exercise the planning
+(see `docs/architecture.md` and the Linear Project). Next: exercise the planning
 gate end-to-end on a real project.

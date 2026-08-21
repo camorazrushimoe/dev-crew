@@ -13,5 +13,10 @@
     "host_url": "http://localhost:8653/webhooks/inbox",
     "container_url": "http://tech-pm:8644/webhooks/inbox",
     "secret": "ЗАМЕНИ_НА_СЕКРЕТ_АГЕНТА"
+  },
+  "devops": {
+    "host_url": "http://localhost:8654/webhooks/inbox",
+    "container_url": "http://devops:8644/webhooks/inbox",
+    "secret": "ЗАМЕНИ_НА_СЕКРЕТ_АГЕНТА"
   }
 }

@@ -29,6 +29,21 @@
   .ev .type { color:var(--muted); min-width:80px; }
   .ev .text { color:var(--text); word-break:break-word; }
   .ev .ts { margin-left:auto; color:var(--muted); font-size:11px; white-space:nowrap; }
+
+  /* Run supervision */
+  .run-head { display:flex; align-items:center; gap:12px; }
+  select { background:var(--card); color:var(--text); border:1px solid var(--border);
+           border-radius:8px; padding:8px 10px; font-size:14px; }
+  table { width:100%; border-collapse:collapse; background:var(--card);
+          border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+  th, td { text-align:left; padding:8px 12px; font-size:13px; border-bottom:1px solid var(--border); }
+  th { color:var(--muted); font-weight:600; font-size:12px; }
+  tr:last-child td { border-bottom:none; }
+  .badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px;
+           background:#262b36; color:var(--muted); }
+  .badge.in-review, .badge.in-progress { background:#3a2f12; color:#f5b942; }
+  .badge.done { background:#14301d; color:#3fbf6a; }
+  .muted { color:var(--muted); }
 </style>
 </head>
 <body>
@@ -37,6 +52,13 @@
   <div class="grid" id="grid"></div>
   <h2>Activity</h2>
   <div class="feed" id="feed"></div>
+
+  <h2>Run supervision</h2>
+  <div class="run-head">
+    <select id="projectSelect" onchange="renderRun()"></select>
+    <span class="sub" id="runMeta"></span>
+  </div>
+  <div id="runView" class="muted" style="margin-top:12px;">loading…</div>
 
 <script>
 const STATE_LABEL = { working:'working', idle:'idle', down:'down' };
@@ -51,7 +73,7 @@ async function refresh() {
 function renderAgents(agents) {
   const g = document.getElementById('grid');
   g.innerHTML = '';
-  const order = ['developer','qa','tech-pm'];
+  const order = ['developer','qa','tech-pm','devops'];
   agents.sort((a,b)=>order.indexOf(a.agent)-order.indexOf(b.agent));
   for (const a of agents) {
     const card = document.createElement('div');
@@ -76,9 +98,54 @@ function renderFeed(activity) {
     f.appendChild(d);
   }
 }
-function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+async function loadProjects() {
+  try {
+    const r = await fetch('/api/projects');
+    const data = await r.json();
+    const sel = document.getElementById('projectSelect');
+    sel.innerHTML = '';
+    for (const p of (data.projects||[])) {
+      const o = document.createElement('option');
+      o.value = p.name; o.textContent = p.name + ' (' + p.issue_count + ')';
+      sel.appendChild(o);
+    }
+    if ((data.projects||[]).length) renderRun();
+    else document.getElementById('runView').textContent = 'no Linear projects (is LINEAR_API_KEY set?)';
+  } catch (e) { document.getElementById('runView').textContent = 'run view unavailable'; }
+}
+
+async function renderRun() {
+  const name = document.getElementById('projectSelect').value;
+  if (!name) return;
+  try {
+    const r = await fetch('/api/run?project=' + encodeURIComponent(name));
+    const d = await r.json();
+    const v = document.getElementById('runView');
+    document.getElementById('runMeta').textContent = d.issues.length + ' tickets';
+    let html = '<table><thead><tr><th>Ticket</th><th>State</th><th>Title</th><th>Assignee</th></tr></thead><tbody>';
+    for (const i of d.issues) {
+      const cls = 'badge ' + (i.state||'').toLowerCase().replace(/\s+/g,'-');
+      html += `<tr><td>${escapeHtml(i.identifier||'')}</td><td><span class="${cls}">${escapeHtml(i.state||'')}</span></td><td>${escapeHtml(i.title||'')}</td><td class="muted">${escapeHtml(i.assignee||'—')}</td></tr>`;
+    }
+    html += '</tbody></table>';
+    html += '<h2 style="font-size:13px;margin:16px 0 8px;">Bus (task lifecycle)</h2><div class="feed">';
+    if (!d.bus.length) html += '<div class="ev"><span class="text">no task events yet</span></div>';
+    for (const b of d.bus.slice(0,20)) {
+      const p = b.payload||{};
+      const cost = (p.duration_s!=null ? Math.round(p.duration_s)+'s' : '') + (p.api_calls!=null ? ' · '+p.api_calls+' calls' : '');
+      html += `<div class="ev"><span class="agent">${escapeHtml(b.actor||'')}</span><span class="type">${escapeHtml(b.action||'')}</span><span class="text">${escapeHtml(p.ticket||'')} ${escapeHtml(p.summary||'')} <span class="muted">${cost}</span></span><span class="ts">${(b.timestamp||'').slice(11,19)}</span></div>`;
+    }
+    html += '</div>';
+    v.innerHTML = html;
+  } catch (e) { document.getElementById('runView').textContent = 'run view error: ' + e; }
+}
+
+function escapeHtml(s){return (s==null?'':String(s)).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 refresh();
+loadProjects();
 setInterval(refresh, 2000);
+setInterval(renderRun, 10000);
 </script>
 </body>
 </html>
