@@ -18,6 +18,9 @@ Messages on the bus SHALL follow the envelope in `bus/action-schema.json`:
 - `timestamp` (string, ISO 8601) — required
 - `payload` (object) — optional
 
+The JSON Schema in `bus/action-schema.json` is the authoritative enum for
+`actor`. Spec and schema SHALL stay in sync.
+
 Known action types include (non-exhaustive):
 
 - `task.created`, `task.started`, `task.finished`, `task.stale`

@@ -58,9 +58,10 @@ SHALL happen only after review passes.
 ### Requirement: Linear Projects are the grouping unit
 
 A product effort SHALL be represented as a Linear **Project**, not as a synthetic
-parent "epic" ticket. tech-pm SHALL create the Project and link every related
-ticket to it. Tickets MAY still declare blocking edges between each other; the
-Project is the filter and progress view.
+parent "epic" ticket. tech-pm SHALL create the Project (or reuse an existing one
+for the same effort) and link every related ticket to it. Tickets MAY still
+declare blocking edges between each other; the Project is the filter and progress
+view.
 
 #### Scenario: new product effort becomes a Project
 
@@ -74,6 +75,18 @@ Project is the filter and progress view.
 - **WHEN** a spec is too large for a single task
 - **THEN** tech-pm SHALL split it into smaller tickets under the same Project
 - **AND** SHALL dispatch them in a sensible order (blocking edges)
+
+#### Scenario: reuse existing Project for the same effort
+
+- **WHEN** a Linear Project for the product effort already exists
+- **THEN** tech-pm SHALL reuse it instead of creating a duplicate
+- **AND** SHALL link new tickets to that existing Project
+
+#### Scenario: ticket without a Project is incomplete dispatch
+
+- **WHEN** tech-pm creates an implementation ticket for a product effort
+- **THEN** the ticket SHOULD be linked to the effort's Project before dispatch
+- **AND** unlinked tickets are a process smell to fix, not a second grouping model
 
 ### Requirement: Escape hatch (critical override)
 

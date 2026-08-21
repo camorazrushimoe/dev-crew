@@ -6,6 +6,12 @@ The first end-to-end SpacedBro MVP run showed that the foundation is runnable bu
 not yet operable without constant manual stitching. Five concrete gaps are closed
 by this change at the **spec level**; implementation follows after review.
 
+## Priority after merge
+
+1. Policy: Projects (#13), hygiene (#14), skill guardrails (#15)
+2. Runtime: completion hooks (#12)
+3. UI: run-supervision (#16)
+
 ## 1. Deterministic task-completion hooks (#12)
 
 ### Problem
@@ -13,15 +19,27 @@ by this change at the **spec level**; implementation follows after review.
 discretion). Manager polls Linear / GitHub / logs.
 
 ### Approach
-Runtime Hermes hook (or thin wrapper around the door handler), **not** a prompt:
+**Preferred mechanism:** thin wrapper around the door handler (knows the inbound
+message and can observe turn end). Hermes hook is acceptable if it can see the
+same binding data.
 
 | Event | Effect |
 |---|---|
-| **START** | Optional: move Linear ticket → In Progress; short comment; bus `task.started` |
-| **FINISH** (success or failure) | Auto-comment Linear (result + one-line summary); move state (Done / In Review / Blocked); webhook ping to manager; bus `task.finished` |
-| **STALE** | If silent > N minutes on an assigned task → bus `task.stale` + optional Linear comment |
+| **START** | Bus `task.started`; optional Linear In Progress + short comment |
+| **FINISH** | Bus `task.finished`; best-effort Linear comment + state move; best-effort manager webhook |
+| **STALE** | Bus `task.stale` if silent > N minutes (default ~30) on an assigned task |
 
-Payload (structured, not free text):
+**Ticket binding:** dispatch messages MUST include `Ticket <ID>` (see task-dispatch).
+Runtime parses that id. If missing: bus event still fires, no Linear state move.
+
+**State rules:** success + PR/reviewable artifact → In Review; success otherwise →
+Done; failure/blocked → Blocked. Payload `status` comes from turn outcome, not
+free-form prose alone.
+
+**Failure mode:** Linear/webhook errors are logged; agent process must not crash
+or hang. Bus publish is the durable minimum signal.
+
+Payload (structured):
 ```json
 {
   "agent": "developer",
@@ -32,81 +50,63 @@ Payload (structured, not free text):
 }
 ```
 
-The hook fires even if the agent skips its own final message. No change to agent
-behaviour is required for the signal to exist.
-
 ## 2. Linear Projects as grouping unit (#13)
 
 ### Problem
-Skills teach "epic = parent ticket + children". Linear Projects are first-class
-(filter, board, progress) and already used informally ("SpacedBro MVP" project).
+Skills teach "epic = parent ticket + children". Linear Projects are first-class.
 
 ### Approach
-- A product effort **is** a Linear Project.
-- tech-pm creates the Project and links every ticket via `issueUpdate(input: { projectId })`.
-- No artificial parent "epic" ticket is required; a goal/summary can live on the
-  project description or a tracking comment.
+- A product effort **is** a Linear Project (create or reuse).
+- tech-pm links every ticket via `projectId`.
+- No artificial parent epic solely for grouping.
 - Update `linear-workflow`, `to-tickets`, `task-dispatch`, FACTORY-STANDARD,
   planning-gate.
 
 ## 3. Workspace hygiene (#14)
 
 ### Problem
-QA (and others) wrote scratch review drafts into `workspace/spaced-bro/`, leaving
-untracked files next to the real project content.
+Agents left review drafts in `workspace/<project>/`.
 
 ### Approach
-Hard rule in FACTORY-STANDARD + every SOUL.md:
-
-- Scratch / drafts / temp files → `$HERMES_HOME` (hermes-home) or `/tmp` only.
-- Never write non-intentional files under `workspace/<project>/`.
-- Before opening a PR: clean untracked scratch from the project tree.
-- Never `git add -A` blindly; stage explicitly.
+- Scratch = non-deliverable files (review drafts, temp notes, dumps, swap files).
+- Scratch only in `$HERMES_HOME` or `/tmp`.
+- Explicit `git add` paths; no `git add -A`.
+- Rule in FACTORY-STANDARD + every SOUL.md.
 
 ## 4. Skill guardrails (#15)
 
 ### Problem
-Hermes "self-improvement" can create/patch skills under `agents/*/skills/` at
-runtime. A gitignored drifted `spec-review` skill caused the Postgres bug.
+Self-improvement drifted a gitignored runtime skill and biased reviews (#9/#10).
 
-### Approach
-- Factory-defining skills under `agents/<role>/skills/` are **version-controlled**
-  and change only via PR (like any other code).
-- Runtime self-improvement is disabled or scoped away from those paths.
-- Any skill create/patch that does occur SHALL emit a bus event
-  (`skill.created` / `skill.patched`) with a short diff so the manager sees it.
-- Agents MAY keep personal/runtime notes under `hermes-home/` (gitignored);
-  those are not factory skills.
+### Approach — single MUST path
+Three layers:
+1. Git factory skills (`agents/<role>/skills/`) — PR only
+2. RO mount at runtime — writes fail
+3. hermes-home runtime drafts — allowed, not contract; SHOULD emit bus events
+
+No in-agent "open a PR for me" path. Promotion = human/manager normal PR.
 
 ## 5. Run-supervision view (#16)
 
 ### Problem
-Dashboard shows only agent health/state. Supervising a real run still requires
-manual Linear + GitHub + log stitching.
+Health dashboard only; manager still stitches Linear + GitHub + logs.
 
 ### Approach
-Extend the dashboard (or add a reporting surface) so one page shows a **run**:
-
-- **run** = a Linear Project
-- per ticket: state, linked PR (if any), assigned agent
-- per agent: current task, state (idle/working), last activity
-- **cost**: token usage per agent/ticket (from Hermes logs / state)
-
-Data sources already exist (Linear GraphQL, GitHub API, Redis status keys,
-agent logs). First version can be read-only aggregation; push-driven updates can
-follow once completion hooks land.
+Run = Linear Project. Show tickets, agents, cost-when-available.
+Missing cost must not break the page.
+Linear/GitHub tokens: instance config only, read-only scope preferred.
 
 ## Goals / Non-Goals
 
 **Goals**
-- Manager gets a push when any agent finishes a dispatched task.
+- Manager gets a push (or at least a bus event) when any agent finishes.
 - Product efforts are Linear Projects, not synthetic epics.
 - Workspace stays clean after a full run.
 - Factory skills cannot drift outside review.
-- One page answers "what is the factory doing right now for this run?".
+- One page answers "what is the factory doing for this run?".
 
 **Non-Goals (this change)**
-- Full implementation of the Hermes hook or dashboard UI (spec first).
+- Full implementation of the door wrapper/hook or dashboard UI (spec first).
 - Replacing Linear entirely.
-- Token-cost accounting infrastructure beyond what logs already expose.
+- Building a full token-accounting subsystem.
 - Changing product-repo OpenSpec processes.

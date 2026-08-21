@@ -2,44 +2,53 @@
 
 ## ADDED Requirements
 
-### Requirement: Factory skills change only via review
+### Requirement: Three skill path layers
 
-Skills under `agents/<role>/skills/` (the tracked, factory-defining skills)
-SHALL change only through a reviewable PR. Agents SHALL NOT silently create or
-patch those skills at runtime.
+The factory distinguishes three layers:
 
-#### Scenario: unsupervised skill write is blocked or reviewed
+| Layer | Location | Mutability |
+|---|---|---|
+| **Factory skills (git)** | `agents/<role>/skills/` in the dev-crew repo | Change only via reviewed PR |
+| **Factory skills (runtime mount)** | Read-only mount (e.g. `/opt/data/skills/dev-crew`) | Not writable by agents |
+| **Runtime / personal notes** | Agent `hermes-home/` (gitignored), including any runtime skill drafts | Writable; not factory contract |
 
-- **WHEN** an agent attempts to create or modify a skill under `agents/<role>/skills/`
-- **THEN** the change SHALL either be rejected by the runtime
-- **OR** SHALL be forced through a path that produces a reviewable PR
+### Requirement: Factory skills are not writable at runtime
 
-### Requirement: Self-improvement is scoped away from factory skills
+Agents SHALL NOT create or patch factory skills. Writes under the factory skill
+git tree or the read-only skills mount SHALL be rejected by the environment
+(read-only mount and/or runtime guard). There is no "force through PR" path from
+inside a running agent — a human or manager opens a normal PR in the repo.
 
-Hermes (or equivalent) self-improvement features SHALL be disabled or scoped so
-they cannot write under the tracked factory skill paths without review.
+#### Scenario: write to factory skill mount is rejected
 
-#### Scenario: self-improvement does not drift factory behaviour
+- **WHEN** an agent attempts to create or modify a file under the factory skills mount
+- **THEN** the write SHALL fail (read-only filesystem or explicit guard)
+- **AND** factory behaviour SHALL remain unchanged
 
-- **WHEN** self-improvement runs during a task
-- **THEN** it SHALL NOT permanently alter factory skills outside a reviewed change
+#### Scenario: self-improvement cannot drift factory skills
 
-### Requirement: Skill mutations are visible
+- **WHEN** Hermes (or equivalent) self-improvement runs during a task
+- **THEN** it SHALL NOT permanently alter factory skills under the git tree or RO mount
 
-If a skill is created or patched (including under hermes-home runtime areas),
-the system SHALL emit a bus event so the manager can see it:
+### Requirement: Runtime skill-like writes are visible
+
+If an agent creates or patches skill-like files under `hermes-home/` (runtime
+layer), the system SHOULD emit a bus event so the manager can see it:
 
 - `skill.created` — payload includes path and short description
 - `skill.patched` — payload includes path and a short diff or summary
 
-#### Scenario: skill patch is not silent
+These runtime files are **not** factory skills and do not change the shared
+contract until promoted via a reviewed PR into `agents/<role>/skills/`.
 
-- **WHEN** a skill file is created or patched
-- **THEN** a corresponding bus action SHALL be published
-- **AND** the manager SHALL be able to observe the event without inspecting container filesystems
+#### Scenario: hermes-home skill draft is observable
 
-### Requirement: Personal runtime notes are separate
+- **WHEN** an agent writes a skill-like file under hermes-home
+- **THEN** a `skill.created` or `skill.patched` bus action SHOULD be published when feasible
+- **AND** the manager SHALL be able to inspect hermes-home without treating the draft as factory contract
 
-Agents MAY keep personal/runtime notes under `hermes-home/` (gitignored). Those
-are not factory skills and are not subject to the PR gate, but skill-like writes
-that affect shared behaviour still SHOULD surface as bus events when feasible.
+### Requirement: Promotion path is a normal PR
+
+Promoting a useful runtime skill into the factory SHALL be done by copying it into
+`agents/<role>/skills/` on a feature branch and opening a PR — the same review
+gate as any other foundation change.

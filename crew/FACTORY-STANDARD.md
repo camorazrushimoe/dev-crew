@@ -41,32 +41,35 @@ A project's spec lives in its repo under `openspec/`:
 
 ## Linear Projects (not synthetic epics)
 
-A product effort **is** a Linear Project. tech-pm creates the Project and links
-every ticket to it. Do not invent a parent "epic" ticket solely for grouping.
-Tickets may still declare blocking edges between each other; the Project is the
-filter and progress view.
+A product effort **is** a Linear Project. tech-pm creates the Project (or reuses
+an existing one for the same effort) and links every ticket to it. Do not invent a
+parent "epic" ticket solely for grouping. Tickets may still declare blocking edges
+between each other; the Project is the filter and progress view.
 
 ## Task completion (deterministic)
 
-Task start/finish is signalled by the **runtime** (completion hooks), not only by
-LLM comments. On finish the factory auto-comments Linear, updates ticket state,
-pings the manager, and publishes `task.finished` on the bus. Agents should still
-comment useful detail, but the manager-facing signal MUST NOT depend on prompt
-discipline alone.
+Task start/finish is signalled by the **runtime** (door-handler wrapper preferred),
+not only by LLM comments. Dispatch messages include `Ticket <ID>` so the runtime
+can bind events. On finish the factory best-effort auto-comments Linear, updates
+ticket state (success+PR → In Review; success → Done; failure/blocked → Blocked),
+pings the manager, and always publishes `task.finished` on the bus. External API
+failures must not crash the agent. Agents should still comment useful detail.
 
 ## Workspace hygiene
 
-- Write drafts, scratch notes and temp files only under `$HERMES_HOME` or `/tmp`.
-- Never leave non-intentional files under `workspace/<project>/`.
+- **Scratch** = non-deliverable files (review drafts, temp notes, dumps, swap files).
+- Write scratch only under `$HERMES_HOME` or `/tmp`.
+- Never leave scratch under `workspace/<project>/`.
 - Before opening a PR, clean untracked scratch from the project tree.
 - Never `git add -A` blindly — stage explicit paths.
 
 ## Skill guardrails
 
-Factory skills under `agents/<role>/skills/` change only via reviewed PR. Do not
-silently create or patch those skills at runtime. Runtime/personal notes may live
-under hermes-home (gitignored). Skill create/patch events should be visible on
-the bus (`skill.created` / `skill.patched`).
+Factory skills (`agents/<role>/skills/` in git; read-only mount at runtime) are not
+writable by agents. Do not silently create or patch them. Runtime/personal notes may
+live under hermes-home (gitignored) and are not factory contract until promoted via
+a normal reviewed PR. Skill-like writes under hermes-home should be visible on the
+bus when feasible (`skill.created` / `skill.patched`).
 
 ## Escape hatch (critical override)
 

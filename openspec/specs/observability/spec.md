@@ -38,6 +38,9 @@ where a **run** is a Linear Project. For the selected run the view SHALL show:
 - per agent: current task, state (idle/working/down), last activity
 - cost: token usage per agent and/or ticket when available from Hermes logs or state
 
+Linked PRs MAY be resolved from ticket comments, PR titles/bodies that reference
+the ticket id, or an explicit link field when present.
+
 #### Scenario: manager opens one page for the current run
 
 - **WHEN** the manager selects a Linear Project as the active run
@@ -45,11 +48,20 @@ where a **run** is a Linear Project. For the selected run the view SHALL show:
 - **AND** SHALL show which agents are working on which tickets
 - **AND** SHALL surface available token-cost information without requiring manual log stitching
 
+#### Scenario: cost data is missing
+
+- **WHEN** token-cost data is unavailable for an agent or ticket
+- **THEN** the supervision view SHALL still render tickets and agent activity
+- **AND** SHALL show cost as unknown / omitted rather than failing the page
+
 #### Scenario: supervision uses existing data sources
 
 - **WHEN** the run-supervision view is rendered
 - **THEN** it SHALL aggregate from Linear (tickets/project), GitHub (linked PRs),
   Redis status keys, and agent activity/cost sources already present in the factory
+
+Credentials for Linear/GitHub used by the supervision surface SHALL live in
+instance config (not the foundation repo) and SHOULD be read-only scoped.
 
 ## Notes
 

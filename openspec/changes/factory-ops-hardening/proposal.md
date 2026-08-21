@@ -25,27 +25,34 @@ factory foundation:
 - Make **Linear Projects** the work-grouping unit (replace synthetic parent epics).
 - Add a **workspace hygiene** rule: scratch only in `$HERMES_HOME` or `/tmp`, never
   in `workspace/`.
-- Add **skill guardrails**: factory skills under `agents/*/skills/` are reviewable
-  only via PR; skill create/patch events are visible on the bus.
+- Add **skill guardrails**: factory skills are not writable at runtime; runtime
+  drafts under hermes-home are visible on the bus when feasible.
 - Extend **observability** with a run-supervision view (tickets + agent activity +
   cost) grouped by Linear Project.
+
+## Implementation priority (after this spec merges)
+
+1. **Policy (cheap, immediate):** #13 Projects, #14 hygiene, #15 skill guardrails
+   (docs + SOUL + RO mount already helps).
+2. **Runtime signal:** #12 completion hooks (unblocks reliable supervision).
+3. **Supervision UI:** #16 run view (builds on #12 + existing health dashboard).
 
 ## Capabilities
 
 ### New Capabilities
 
 - `task-completion`: deterministic START/FINISH hooks, Linear auto-comment, manager
-  push, stale-task signal.
+  push, stale-task signal, ticket binding, best-effort external side effects.
 - `workspace-hygiene`: scratch location rules, pre-PR cleanup, no `git add -A`.
-- `skill-guardrails`: no unsupervised modification of factory skills; bus events
-  for skill create/patch.
+- `skill-guardrails`: block runtime writes to factory skills; path layers; bus
+  visibility for hermes-home drafts.
 
 ### Modified Capabilities
 
 - `planning-gate`: Linear Projects as the grouping unit (not parent epic tickets).
 - `observability`: run-supervision view (tickets + agents + cost).
 - `message-bus`: new actions (`task.started`, `task.finished`, `skill.created`,
-  `skill.patched`, `task.stale`).
+  `skill.patched`, `task.stale`); `devops` actor in schema.
 
 ## Impact
 
@@ -55,6 +62,10 @@ factory foundation:
 - `openspec/specs/planning-gate/spec.md` — Projects instead of epics
 - `openspec/specs/observability/spec.md` — run-supervision view
 - `openspec/specs/message-bus/spec.md` — new action types
+- `bus/action-schema.json` — actor enum includes `devops`
 - `crew/FACTORY-STANDARD.md` — hygiene + skills + projects + completion rules
+- `agents/*/hermes-home/SOUL.md` — scratch + skill guardrails
 - `agents/tech-pm/skills/linear-workflow/SKILL.md` — projectCreate + linking
+- `agents/tech-pm/skills/to-tickets/SKILL.md` — Projects, not epics
+- `agents/tech-pm/skills/task-dispatch/SKILL.md` — ticket id required in message
 - Related issues: #12, #13, #14, #15, #16
