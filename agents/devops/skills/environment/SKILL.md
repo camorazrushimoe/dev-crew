@@ -31,9 +31,9 @@ declared stack deployable and observable, not to impose one.
    connection info and seed steps).
 2. Bring it up on `staging-env` against the host Docker daemon (the socket is
    mounted read-only at `/var/run/docker.sock`):
-   - `docker compose -f /workspace/<project>/compose.yml up -d`
-   - If the `compose` plugin is missing in this container, use plain `docker`
-     commands or ask the manager to run compose from the host.
+   - `docker-compose -f /workspace/<project>/compose.yml up -d`
+   - The image provides the `docker-compose` (standalone v2) binary. If it is
+     missing, use plain `docker` commands or ask the manager to run compose from the host.
 3. Seed base data if the project defines a seed step.
 4. Health-check the services and report explicitly.
 

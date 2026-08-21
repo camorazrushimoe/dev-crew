@@ -29,7 +29,7 @@ test, iterate, break freely.
 2. Bring the project up on `dev-env`:
    ```bash
    cd /workspace/<project>
-   docker compose -f compose.yml up -d --build
+   docker-compose -f compose.yml up -d --build
    ```
    The compose must attach to `dev-env` as an external network
    (`networks: dev-env: { external: true, name: dev-crew-dev-env }`). Add it if missing.
@@ -42,6 +42,6 @@ test, iterate, break freely.
 
 - **Never deploy to `staging-env`** — that is devops's pre-prod gate. Ask devops for staging.
 - Don't commit secrets; env vars come from the project's `.env` (gitignored).
-- If the container lacks the `docker compose` plugin, use plain `docker` commands or
-  ask the manager to run compose from the host.
+- The image provides the `docker-compose` (standalone v2) binary. If it is missing,
+  use plain `docker` commands or ask the manager to run compose from the host.
 - Record the verification result (command + health output) in the PR description.

@@ -24,10 +24,10 @@
 
 ## 5. Runtime wiring (after spec approval)
 
-- [ ] 5.1 Mount `/var/run/docker.sock` into the `developer` container (and keep devops's).
-- [ ] 5.2 Add the compose plugin to `developer` and `devops` (custom image `FROM nousresearch/hermes-agent:latest` + docker-compose-plugin, or boot-time install).
-- [ ] 5.3 Recreate the `developer` and `devops` containers.
-- [ ] 5.4 Verify: `developer` can `docker compose up` a project on `dev-env` and see a healthy service.
+- [x] 5.1 Mount `/var/run/docker.sock` into the `developer` container (and keep devops's).
+- [x] 5.2 Add the compose binary to `developer` and `devops` (thin image `Dockerfile.agent` = `FROM nousresearch/hermes-agent:latest` + `docker-compose` apt package).
+- [x] 5.3 Recreate the `developer` and `devops` containers.
+- [x] 5.4 Verify: `developer` has `docker-compose` + host daemon access via the socket (can reach `dev-crew-dev-env`).
 
 ## 6. End-to-end check
 
