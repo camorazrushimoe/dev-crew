@@ -12,6 +12,8 @@ Conventions:
 """
 import json
 import os
+import hmac
+import hashlib
 import socket
 import urllib.request
 import urllib.error
@@ -132,28 +134,41 @@ def publish(redis, actor, action, target="*", payload=None):
 # ---------------------------------------------------------------------------
 # Linear GraphQL client
 # ---------------------------------------------------------------------------
-def load_linear_key():
-    """LINEAR_API_KEY from env, then root .env, then each agent's .env."""
-    key = os.environ.get("LINEAR_API_KEY", "").strip()
-    if key:
-        return key
-    candidates = [
-        os.path.expanduser("~/Projects/dev-crew/.env"),
-        os.path.join(AGENTS_BASE, "tech-pm", "hermes-home", ".env"),
-        os.path.join(AGENTS_BASE, "developer", "hermes-home", ".env"),
-    ]
-    for path in candidates:
+_ENV_FILES = [
+    os.path.expanduser("~/Projects/dev-crew/.env"),
+    os.path.join(AGENTS_BASE, "tech-pm", "hermes-home", ".env"),
+    os.path.join(AGENTS_BASE, "developer", "hermes-home", ".env"),
+]
+
+
+def getenv(key, default=""):
+    """Config lookup: process env first, then the instance .env files."""
+    v = os.environ.get(key)
+    if v:
+        return v
+    for path in _ENV_FILES:
         try:
             with open(path) as f:
                 for line in f:
                     line = line.strip()
-                    if line.startswith("LINEAR_API_KEY="):
-                        v = line.split("=", 1)[1].strip()
-                        if v:
-                            return v
+                    if line.startswith(key + "="):
+                        val = line.split("=", 1)[1].strip()
+                        if val:
+                            return val
         except OSError:
             continue
-    return ""
+    return default
+
+
+def sign(secret, payload):
+    """HMAC-SHA256 signature in X-Hub-Signature-256 format."""
+    return "sha256=" + hmac.new(secret.encode(), payload.encode(),
+                                hashlib.sha256).hexdigest()
+
+
+def load_linear_key():
+    """LINEAR_API_KEY from env, then instance .env files."""
+    return getenv("LINEAR_API_KEY", "")
 
 
 class Linear:
