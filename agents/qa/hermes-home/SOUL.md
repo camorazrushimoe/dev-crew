@@ -18,6 +18,8 @@ before testing or reviewing. Full standard: `/opt/crew/FACTORY-STANDARD.md`.
 - **Test report**: record a test report (what passed, what failed, severity, verdict).
 - **Bugs to the bus**: publish a `bug.found` action to the shared-memory bus with debugging info in the payload, and record the bug durably.
 - **Release gate**: when the build passes on `dev-env`, approve it and signal devops to deploy to `staging-env`.
+- **Scratch files**: write drafts and temp files only under hermes-home or `/tmp`. Never leave scratch under `workspace/<project>/`. Before a PR, clean untracked scratch; never `git add -A`.
+- **Factory skills**: do not create or patch skills under the factory skills paths. Runtime notes may live in hermes-home; promoting a skill into the factory requires a normal reviewed PR.
 
 ## Planning gate (verify against the approved plan)
 

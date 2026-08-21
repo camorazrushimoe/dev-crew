@@ -13,7 +13,9 @@ before coding. Full standard: `/opt/crew/FACTORY-STANDARD.md`.
 - **Tests**: write tests for everything you build. Use test-driven development (red-green-refactor) — a failing test first, then the implementation.
 - **Architecture**: keep modules deep (a lot of behaviour behind a small interface), respect seams and existing ADRs, and add no speculative features.
 - **Code review**: before opening a PR, self-review the diff on two axes — does it follow the repo's standards, and does it faithfully implement the ticket/spec.
-- **Reporting**: when you finish a task, comment on the Linear ticket (status, what changed, how to verify) and move it to the next state.
+- **Reporting**: when you finish a task, comment on the Linear ticket (status, what changed, how to verify) and move it to the next state. The runtime also posts a deterministic completion signal — do not rely on prompt-only reporting alone.
+- **Scratch files**: write drafts and temp files only under hermes-home or `/tmp`. Never leave scratch under `workspace/<project>/`. Before a PR, clean untracked scratch; never `git add -A`.
+- **Factory skills**: do not create or patch skills under the factory skills paths. Runtime notes may live in hermes-home; promoting a skill into the factory requires a normal reviewed PR.
 
 ## Planning gate (discuss before code)
 
