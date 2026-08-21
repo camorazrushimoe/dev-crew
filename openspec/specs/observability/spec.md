@@ -29,7 +29,42 @@ tail of its gateway log, derive the agent state, and write it to Redis keys
 The dashboard SHALL serve `GET /api/status` (JSON with agent statuses and recent
 activity) and the live web view at `/` (`index.html`).
 
+### Requirement: Run-supervision view
+
+The factory SHALL provide a per-run supervision surface (dashboard page or CLI)
+where a **run** is a Linear Project. For the selected run the view SHALL show:
+
+- per ticket: state, linked PR (if any), assigned agent
+- per agent: current task, state (idle/working/down), last activity
+- cost: token usage per agent and/or ticket when available from Hermes logs or state
+
+Linked PRs MAY be resolved from ticket comments, PR titles/bodies that reference
+the ticket id, or an explicit link field when present.
+
+#### Scenario: manager opens one page for the current run
+
+- **WHEN** the manager selects a Linear Project as the active run
+- **THEN** the supervision view SHALL list the project's tickets with states and assignees
+- **AND** SHALL show which agents are working on which tickets
+- **AND** SHALL surface available token-cost information without requiring manual log stitching
+
+#### Scenario: cost data is missing
+
+- **WHEN** token-cost data is unavailable for an agent or ticket
+- **THEN** the supervision view SHALL still render tickets and agent activity
+- **AND** SHALL show cost as unknown / omitted rather than failing the page
+
+#### Scenario: supervision uses existing data sources
+
+- **WHEN** the run-supervision view is rendered
+- **THEN** it SHALL aggregate from Linear (tickets/project), GitHub (linked PRs),
+  Redis status keys, and agent activity/cost sources already present in the factory
+
+Credentials for Linear/GitHub used by the supervision surface SHALL live in
+instance config (not the foundation repo) and SHOULD be read-only scoped.
+
 ## Notes
 
-The dashboard currently tracks `developer`, `qa`, and `tech-pm`. Tracking for
-`devops` is a known gap to be addressed in a future change.
+The basic health dashboard currently tracks `developer`, `qa`, and `tech-pm`.
+Tracking for `devops` remains a known gap. Run-supervision builds on top of the
+health view and does not replace it.

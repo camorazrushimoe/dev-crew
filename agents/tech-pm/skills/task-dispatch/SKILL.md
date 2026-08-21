@@ -13,21 +13,23 @@ To hand a task to another agent, send a message through their webhook door using
 python3 /opt/crew/crew-send.py <agent> "<message>" --container
 ```
 
-Where `<agent>` is `developer`, `qa`, or `tech-pm`.
+Where `<agent>` is `developer`, `qa`, `tech-pm`, or `devops`.
 
 ## Message format
 
-Include: the ticket identifier, the goal, acceptance criteria, and what to report back.
+**Always** start with the Linear ticket identifier so completion hooks can bind the turn:
 
 ```
 Ticket BON-15 — implement /login
+Project: <Linear Project name if known>
 Goal: ...
 Acceptance criteria: ...
-Report: comment on the ticket when done, then move it to In Review.
+Report: comment on the ticket when done with useful detail (the runtime also posts a deterministic completion signal).
 ```
 
 ## Rules
 
 - One task per message.
-- Always reference the Linear ticket identifier.
+- Always reference the Linear ticket identifier (`Ticket <ID>`).
+- Prefer tickets that are already linked to the effort's Linear Project.
 - Track status after dispatch (mark the ticket assigned / in progress).

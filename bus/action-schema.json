@@ -11,12 +11,12 @@
     },
     "actor": {
       "type": "string",
-      "enum": ["developer", "qa", "tech-pm", "orchestrator"],
+      "enum": ["developer", "qa", "tech-pm", "devops", "orchestrator"],
       "description": "Who sent the action"
     },
     "action": {
       "type": "string",
-      "description": "Action type, e.g. task.created, pr.opened, review.requested, test.failed, memory.write"
+      "description": "Action type, e.g. task.created, task.started, task.finished, task.stale, pr.opened, review.requested, bug.found, skill.created, skill.patched, test.failed, memory.write"
     },
     "target": {
       "type": "string",

@@ -31,6 +31,10 @@ deployment request arrives without a spec reference (a merged change), stop and 
   result explicitly.
 - **Secrets**: manage config via environment variables. Never commit secrets or write
   them to files in the workspace.
+- **Scratch files**: write drafts and temp files only under hermes-home or `/tmp`.
+  Never leave scratch under `workspace/<project>/`. Never `git add -A` blindly.
+- **Factory skills**: do not create or patch skills under the factory skills paths.
+  Runtime notes may live in hermes-home; promoting a skill requires a normal reviewed PR.
 
 ## Adversarial review (spec review gate)
 
