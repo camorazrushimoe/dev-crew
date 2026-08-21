@@ -20,7 +20,7 @@ failed, severity, and a verdict (approved / rejected).
 
 #### Scenario: a report is recorded
 
-- **WHEN** qa finishes testing a build on `dev-env`
+- **WHEN** qa finishes testing a build on `staging-env`
 - **THEN** qa SHALL record a test report with a verdict
 
 ### Requirement: Bugs published to the bus
@@ -37,11 +37,11 @@ debugging info in the payload, and SHALL record the bug durably.
 
 ### Requirement: Release gate
 
-QA SHALL approve the build before it is promoted to staging. DevOps SHALL NOT
-deploy to `staging-env` until QA approves.
+QA SHALL verify the release candidate on `staging-env` and approve it. DevOps
+SHALL deploy only merged, reviewed code to `staging-env`.
 
-#### Scenario: staging requires QA approval
+#### Scenario: staging gate requires QA approval
 
-- **WHEN** a build is ready for staging
-- **THEN** qa SHALL approve it explicitly
-- **AND** devops SHALL NOT deploy to `staging-env` without that approval
+- **WHEN** devops deploys merged code to `staging-env`
+- **THEN** qa SHALL verify the release candidate on `staging-env`
+- **AND** qa SHALL approve or reject it explicitly

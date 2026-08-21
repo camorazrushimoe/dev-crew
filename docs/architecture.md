@@ -85,10 +85,10 @@ hard on wrong assumptions.
 Two isolated, empty networks shared by every project. The foundation provides the
 networks; each project brings its own services via its own compose file.
 
-| Environment | Network (name) | Purpose |
-|-------------|----------------|---------|
-| dev-env | `dev-crew-dev-env` | developer builds and breaks freely |
-| staging-env | `dev-crew-staging-env` | qa verifies release candidates |
+| Environment | Network (name) | Owner | Purpose |
+|-------------|----------------|-------|---------|
+| dev-env | `dev-crew-dev-env` | developer | sandbox — build/test/break freely (pre-PR) |
+| staging-env | `dev-crew-staging-env` | devops | pre-prod gate — merged code, QA-verified |
 
 A project declares its services in `workspace/<project>/compose.yml` and attaches to
 `dev-env` / `staging-env` via `external: true`. Services are named `<service>-dev` /

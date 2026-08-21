@@ -2,24 +2,25 @@
 
 ## 1. Spec
 
-- [ ] 1.1 Update `openspec/specs/environments/spec.md` — add "Developer owns the dev-env sandbox"; scope devops to `staging-env`; update onboarding + stage-progression scenarios.
-- [ ] 1.2 Update `openspec/specs/agent-roles/spec.md` — "Owns" column (developer: implement + dev-env; devops: staging-env).
+- [x] 1.1 Update `openspec/specs/environments/spec.md` — add "Developer owns the dev-env sandbox"; scope devops to `staging-env`; update onboarding + stage-progression scenarios.
+- [x] 1.2 Update `openspec/specs/agent-roles/spec.md` — "Owns" column (developer: implement + dev-env; devops: staging-env).
+- [x] 1.3 Update `openspec/specs/qa-testing/spec.md` — QA verifies on `staging-env`; release gate flipped (approve after staging deploy, not before).
 
 ## 2. Agent contracts (SOUL)
 
-- [ ] 2.1 `developer` SOUL — may `docker compose up` on `dev-env`; verify before PR; never touch `staging-env`.
-- [ ] 2.2 `devops` SOUL — owns `staging-env` (pre-prod); no longer "only deployer" of dev-env.
-- [ ] 2.3 `qa` SOUL — verifies release candidates on `staging-env`.
+- [x] 2.1 `developer` SOUL — may `docker compose up` on `dev-env`; verify before PR; never touch `staging-env`.
+- [x] 2.2 `devops` SOUL — owns `staging-env` (pre-prod); no longer "only deployer" of dev-env.
+- [x] 2.3 `qa` SOUL — verifies release candidates on `staging-env`.
 
 ## 3. Skills
 
-- [ ] 3.1 New `agents/developer/skills/deploy-dev/SKILL.md` — how to bring the project up on `dev-env` (compose, health, teardown).
-- [ ] 3.2 Update `agents/devops/skills/environment/SKILL.md` and `deploy/SKILL.md` — scope to `staging-env`.
+- [x] 3.1 New `agents/developer/skills/deploy-dev/SKILL.md` — how to bring the project up on `dev-env` (compose, health, teardown).
+- [x] 3.2 Update `agents/devops/skills/environment/SKILL.md` and `deploy/SKILL.md` — scope to `staging-env`.
 
 ## 4. Docs
 
-- [ ] 4.1 Update `crew/FACTORY-STANDARD.md` — new pipeline (dev-env pre-PR, staging gate).
-- [ ] 4.2 Update `README.md` — environment ownership + workflow.
+- [x] 4.1 Update `crew/FACTORY-STANDARD.md` — new pipeline (dev-env pre-PR, staging gate).
+- [x] 4.2 Update `README.md` — environment ownership + workflow.
 
 ## 5. Runtime wiring (after spec approval)
 

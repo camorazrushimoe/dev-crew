@@ -99,11 +99,17 @@ health checks, and report. Devops SHALL deploy only merged, reviewed code to
 - **THEN** devops SHALL bring up the project's compose in `staging-env`, seed
   base data, and verify health
 
-#### Scenario: stage progression
+#### Scenario: only merged code reaches staging
 
-- **WHEN** a change is merged and QA approves the build on `staging-env`
-- **THEN** the build SHALL be treated as a verified release candidate
-- **AND** devops SHALL NOT deploy unreviewed or unmerged code to `staging-env`
+- **WHEN** a change is ready for `staging-env`
+- **THEN** devops SHALL deploy only merged, reviewed code
+- **AND** SHALL NOT deploy unreviewed or unmerged code to `staging-env`
+
+#### Scenario: QA approves the release candidate
+
+- **WHEN** a build is deployed to `staging-env`
+- **THEN** qa SHALL verify it on `staging-env`
+- **AND** SHALL approve the build explicitly
 
 ### Requirement: Database engine is the project's choice
 
