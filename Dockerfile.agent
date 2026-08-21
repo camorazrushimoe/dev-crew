@@ -1,0 +1,13 @@
+# Dev Crew — agent image with the Docker Compose v2 binary.
+#
+# The base hermes-agent image ships the Docker CLI but not `docker compose`.
+# The developer and devops agents need Compose to run a project's
+# `workspace/<project>/compose.yml` against the host Docker daemon.
+#
+# Build (run from the repo root):
+#   docker build -t dev-crew-agent:local -f Dockerfile.agent .
+FROM nousresearch/hermes-agent:latest
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends docker-compose \
+    && rm -rf /var/lib/apt/lists/*

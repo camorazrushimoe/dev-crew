@@ -36,7 +36,10 @@ services:
       retries: 5
 
   developer:
-    image: nousresearch/hermes-agent:latest
+    image: dev-crew-agent:local
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
     container_name: dev-crew-developer
     restart: unless-stopped
     networks: [crew, dev-env, staging-env]
@@ -48,6 +51,7 @@ services:
       - ./agents/developer/skills:/opt/data/skills/dev-crew:ro
       - ./crew:/opt/crew:ro
       - ./workspace:/workspace
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - HERMES_UID=501
       - HERMES_GID=20
@@ -105,7 +109,10 @@ services:
     command: ["gateway", "run"]
 
   devops:
-    image: nousresearch/hermes-agent:latest
+    image: dev-crew-agent:local
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
     container_name: dev-crew-devops
     restart: unless-stopped
     networks: [crew, dev-env, staging-env]

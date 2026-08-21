@@ -1,0 +1,10 @@
+# Keep the build context for Dockerfile.agent minimal (it does no COPY).
+.git
+.gitignore
+workspace
+agents/*/hermes-home
+**/__pycache__
+**/.cache
+**/.local
+**/.npm
+**/*.log

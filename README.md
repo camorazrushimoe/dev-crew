@@ -102,6 +102,7 @@ credentials live in the project, not the foundation.
 
 ```
 docker-compose.yml          # the whole team: 4 agents + Redis + clusters
+Dockerfile.agent            # thin agent image (adds `docker compose` for dev/deploy)
 agents/<name>/hermes-home/  # isolated home per agent (config.yaml + SOUL.md)
 crew/crew-send.py           # door client — send a message to any agent
 crew/agents.json            # agent registry (urls + secrets, gitignored)
@@ -116,7 +117,9 @@ workspace/                  # shared code area (mounted into agents; gitignored)
 ## Quick start
 
 ```bash
-# 1. Start the factory (3 agents + Redis bus + dev/staging clusters)
+# 1. Start the factory (4 agents + Redis bus + dev/staging clusters).
+#    developer + devops use a thin image (Dockerfile.agent) that adds `docker compose`;
+#    build it once (or after Dockerfile.agent changes): `docker compose build`.
 docker compose up -d
 
 # 2. Ping an agent via CLI
