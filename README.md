@@ -2,6 +2,10 @@
 
 A software development team made of isolated agents (Docker containers) that you can spin up anywhere with a single command. Every engineer runs in its own container, with its own tools and skills.
 
+> **Agent Office:** this repo is also a **team template** under [Agent Office](https://github.com/camorazrushimoe/agent-office).  
+> Multiple Dev instances can be composed from pinned refs of this template.  
+> See [docs/office-template.md](docs/office-template.md) for the Office-compatible contract (shared bus, lifecycle, no team-owned pre-prod).
+
 ## The team
 
 **Agents** — one container each, with its own tools and skills:
@@ -21,6 +25,8 @@ A software development team made of isolated agents (Docker containers) that you
 
 Project services (databases, apps) live in each project's own compose file, not in
 the foundation (see "Generic environments" below).
+
+Under Agent Office, Redis and shared pre-prod move to the Office layer; this template keeps the private **dev-env** sandbox. Details in [docs/office-template.md](docs/office-template.md).
 
 ## How they communicate
 
@@ -171,4 +177,7 @@ Golden rule: **no spec → no work** (see `crew/FACTORY-STANDARD.md`).
 
 Foundation: agents + Redis + universal clusters + planning gate are wired up
 (see `docs/architecture.md` and the Linear Project). Next: exercise the planning
-gate end-to-end on a real project.
+gate end-to-end on a real project. Office template contract is documented in
+[docs/office-template.md](docs/office-template.md) (implementation of Office-attach mode follows).
+
+See also: [Agent Office](https://github.com/camorazrushimoe/agent-office) · [Lab Crew](https://github.com/camorazrushimoe/lab-crew)
