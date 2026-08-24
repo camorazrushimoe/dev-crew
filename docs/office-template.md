@@ -51,14 +51,22 @@ This repo MAY continue to support standalone operation (local Redis, always-on a
 
 ## Implementation roadmap (spec → code)
 
-This document is the **specification commitment**. Code changes still required:
+This document is the **specification commitment**.
 
-- [ ] Optional/external Redis configuration (Office bus URL)
-- [ ] Lifecycle controller service + agent `restart: "no"`
-- [ ] Wake-aware `crew/crew-send.py`
+Done (Office-attached compose is now the default — see `docker-compose.yml`):
+
+- [x] Optional/external Redis configuration (Office bus URL) — external network
+      `agent-office-crew`, no local Redis, `OFFICE_BUS_URL` env.
+- [x] Agent `restart: "no"` (controller-managed) in Office-attached compose.
+- [x] Document env vars for Office attach (`TEAM_NAME`, `OFFICE_BUS_URL`,
+      `DOOR_SECRET_*`, `CUSTOM_API_KEY`) — see `.env.example`.
+
+Still pending (next PRs):
+
+- [ ] Lifecycle controller service (idle stop + wake on demand)
+- [ ] Wake-aware `crew/crew-send.py` (`--wake`)
 - [ ] Busy lock tied to task start/finish hooks
 - [ ] Team-qualified actor names on the bus when `TEAM_NAME` is set
-- [ ] Document env vars for Office attach (bus, team name, pre-prod network)
 - [ ] Align staging-env usage with “private verify” vs Office pre-prod promotion
 
 ## Versioning

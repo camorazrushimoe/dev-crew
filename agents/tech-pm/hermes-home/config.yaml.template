@@ -8,10 +8,11 @@ platforms:
     enabled: true
     extra:
       port: 8644
-      secret: dev-crew-devops-secret-8654
+      routes:
+        inbox:
+          secret: ${DOOR_SECRET}
+          prompt: "{message}"
 platform_toolsets:
   webhook:
     - hermes-cli
-onboarding:
-  seen:
-    profile_build_offered: true
+_config_version: 12

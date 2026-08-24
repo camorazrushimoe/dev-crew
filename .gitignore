@@ -76,6 +76,6 @@ venv/
 # явно перечисленные (SOUL/config/gitconfig), всё остальное — рантайм/мусор.
 agents/*/hermes-home/*
 !agents/*/hermes-home/SOUL.md
-!agents/*/hermes-home/config.yaml
+!agents/*/hermes-home/config.yaml.template
 !agents/*/hermes-home/.gitconfig
 ci-task-*.txt

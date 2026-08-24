@@ -1,22 +1,26 @@
 {
   "developer": {
     "host_url": "http://localhost:8651/webhooks/inbox",
-    "container_url": "http://developer:8644/webhooks/inbox",
-    "secret": "ЗАМЕНИ_НА_СЕКРЕТ_АГЕНТА"
+    "container_url": "http://dev-crew-developer:8644/webhooks/inbox",
+    "secret": "ЗАМЕНИ_НА_СЕКРЕТ_АГЕНТА",
+    "wake_hint": "dev-crew:developer"
   },
   "qa": {
     "host_url": "http://localhost:8652/webhooks/inbox",
-    "container_url": "http://qa:8644/webhooks/inbox",
-    "secret": "ЗАМЕНИ_НА_СЕКРЕТ_АГЕНТА"
+    "container_url": "http://dev-crew-qa:8644/webhooks/inbox",
+    "secret": "ЗАМЕНИ_НА_СЕКРЕТ_АГЕНТА",
+    "wake_hint": "dev-crew:qa"
   },
   "tech-pm": {
     "host_url": "http://localhost:8653/webhooks/inbox",
-    "container_url": "http://tech-pm:8644/webhooks/inbox",
-    "secret": "ЗАМЕНИ_НА_СЕКРЕТ_АГЕНТА"
+    "container_url": "http://dev-crew-tech-pm:8644/webhooks/inbox",
+    "secret": "ЗАМЕНИ_НА_СЕКРЕТ_АГЕНТА",
+    "wake_hint": "dev-crew:tech-pm"
   },
   "devops": {
     "host_url": "http://localhost:8654/webhooks/inbox",
-    "container_url": "http://devops:8644/webhooks/inbox",
-    "secret": "ЗАМЕНИ_НА_СЕКРЕТ_АГЕНТА"
+    "container_url": "http://dev-crew-devops:8644/webhooks/inbox",
+    "secret": "ЗАМЕНИ_НА_СЕКРЕТ_АГЕНТА",
+    "wake_hint": "dev-crew:devops"
   }
 }
