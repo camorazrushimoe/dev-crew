@@ -1,51 +1,34 @@
-name: dev-crew
+name: ${TEAM_NAME:-dev-crew}
 
-# Dev Crew — portable agent factory.
-# 4 engineering agents (Hermes) + shared memory (Redis) + generic environments.
+# Dev Crew — Office-attached mode (DEFAULT).
 #
-# Each agent is an isolated hermes-home mounted into /opt/data, plus its
-# role skills mounted read-only as the "dev-crew" skill category.
-# The webhook "door" listens on 8644 inside the container and is
-# mapped to a distinct host port (8651/8652/8653/8654).
+# Agents join the Agent Office shared bus (external network agent-office-crew);
+# no local Redis. Containers are lifecycle-controller-managed (restart: "no").
+# The team keeps its private dev-cluster (dev-env / staging-env) for its own
+# sandbox work; promotion to Office pre-prod goes through Super DevOps.
 #
-# Generic environments (project-agnostic):
-#   - dev-env      -> network "dev-crew-dev-env"     (dev/CI)
-#   - staging-env  -> network "dev-crew-staging-env" (pre-prod)
-# Networks start EMPTY. Projects bring their own compose
-# (workspace/<project>/compose.yml) and attach via `external: true`.
-# Agents reach project services over these networks by service name.
+# Standalone mode (local Redis, always-on) is in docker-compose.standalone.yml.
 #
-# Start:
-#   docker compose up -d
-# Ping an agent:
-#   docker exec dev-crew-developer hermes chat -q "hello"
-#   python3 crew/crew-send.py developer "hello"
+# Env (from .env — see .env.example):
+#   TEAM_NAME         instance id (default: dev-crew)
+#   OFFICE_BUS_URL    Office Redis (default: redis://shared-memory:6379)
+#   CUSTOM_API_KEY    LLM key (runinfra)
+#   DOOR_SECRET_*     per-agent door HMAC secrets
+#   DEV_PORT_*        host port overrides (defaults 8651–8654)
+#
+# Doors: POST /webhooks/inbox on 8644 in-container, host-mapped below.
+# Each agent renders its config.yaml from config.yaml.template at start
+# (render_config.py substitutes ${DOOR_SECRET} / ${CUSTOM_API_KEY}).
 
 services:
-  shared-memory:
-    image: redis:7-alpine
-    container_name: dev-crew-shared-memory
-    restart: unless-stopped
-    networks: [crew]
-    ports:
-      - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-
   developer:
     image: dev-crew-agent:local
     build:
       context: .
       dockerfile: Dockerfile.agent
-    container_name: dev-crew-developer
-    restart: unless-stopped
-    networks: [crew, dev-env, staging-env]
-    depends_on:
-      shared-memory:
-        condition: service_healthy
+    container_name: ${TEAM_NAME:-dev-crew}-developer
+    restart: "no"
+    networks: [office, dev-env, staging-env]
     volumes:
       - ./agents/developer/hermes-home:/opt/data
       - ./agents/developer/skills:/opt/data/skills/dev-crew:ro
@@ -53,95 +36,100 @@ services:
       - ./workspace:/workspace
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      - HERMES_UID=501
-      - HERMES_GID=20
+      - HERMES_UID=${HERMES_UID:-501}
+      - HERMES_GID=${HERMES_GID:-20}
       - HERMES_WRITE_SAFE_ROOT=/opt/data:/workspace
-      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - CUSTOM_API_KEY=${CUSTOM_API_KEY:-}
+      - DOOR_SECRET=${DOOR_SECRET_DEVELOPER:-}
+      - OFFICE_BUS_URL=${OFFICE_BUS_URL:-redis://shared-memory:6379}
+      - TEAM_NAME=${TEAM_NAME:-dev-crew}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
       - GIT_CONFIG_GLOBAL=/opt/data/.gitconfig
     ports:
-      - "8651:8644"
-    command: ["gateway", "run"]
+      - "${DEV_PORT_DEVELOPER:-8651}:8644"
+    command: ["sh", "-c", "python3 /opt/crew/render_config.py && exec hermes gateway run"]
 
   qa:
     image: nousresearch/hermes-agent:latest
-    container_name: dev-crew-qa
-    restart: unless-stopped
-    networks: [crew, dev-env, staging-env]
-    depends_on:
-      shared-memory:
-        condition: service_healthy
+    container_name: ${TEAM_NAME:-dev-crew}-qa
+    restart: "no"
+    networks: [office, dev-env]
     volumes:
       - ./agents/qa/hermes-home:/opt/data
       - ./agents/qa/skills:/opt/data/skills/dev-crew:ro
       - ./crew:/opt/crew:ro
       - ./workspace:/workspace
     environment:
-      - HERMES_UID=501
-      - HERMES_GID=20
+      - HERMES_UID=${HERMES_UID:-501}
+      - HERMES_GID=${HERMES_GID:-20}
       - HERMES_WRITE_SAFE_ROOT=/opt/data:/workspace
-      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - CUSTOM_API_KEY=${CUSTOM_API_KEY:-}
+      - DOOR_SECRET=${DOOR_SECRET_QA:-}
+      - OFFICE_BUS_URL=${OFFICE_BUS_URL:-redis://shared-memory:6379}
+      - TEAM_NAME=${TEAM_NAME:-dev-crew}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
       - GIT_CONFIG_GLOBAL=/opt/data/.gitconfig
     ports:
-      - "8652:8644"
-    command: ["gateway", "run"]
+      - "${DEV_PORT_QA:-8652}:8644"
+    command: ["sh", "-c", "python3 /opt/crew/render_config.py && exec hermes gateway run"]
 
   tech-pm:
     image: nousresearch/hermes-agent:latest
-    container_name: dev-crew-tech-pm
-    restart: unless-stopped
-    networks: [crew]
-    depends_on:
-      shared-memory:
-        condition: service_healthy
+    container_name: ${TEAM_NAME:-dev-crew}-tech-pm
+    restart: "no"
+    networks: [office]
     volumes:
       - ./agents/tech-pm/hermes-home:/opt/data
       - ./agents/tech-pm/skills:/opt/data/skills/dev-crew:ro
       - ./crew:/opt/crew:ro
       - ./workspace:/workspace:ro
     environment:
-      - HERMES_UID=501
-      - HERMES_GID=20
+      - HERMES_UID=${HERMES_UID:-501}
+      - HERMES_GID=${HERMES_GID:-20}
       - HERMES_WRITE_SAFE_ROOT=/opt/data:/workspace
-      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - CUSTOM_API_KEY=${CUSTOM_API_KEY:-}
+      - DOOR_SECRET=${DOOR_SECRET_TECH_PM:-}
+      - OFFICE_BUS_URL=${OFFICE_BUS_URL:-redis://shared-memory:6379}
+      - TEAM_NAME=${TEAM_NAME:-dev-crew}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
       - GIT_CONFIG_GLOBAL=/opt/data/.gitconfig
     ports:
-      - "8653:8644"
-    command: ["gateway", "run"]
+      - "${DEV_PORT_TECH_PM:-8653}:8644"
+    command: ["sh", "-c", "python3 /opt/crew/render_config.py && exec hermes gateway run"]
 
   devops:
     image: dev-crew-agent:local
     build:
       context: .
       dockerfile: Dockerfile.agent
-    container_name: dev-crew-devops
-    restart: unless-stopped
-    networks: [crew, dev-env, staging-env]
-    depends_on:
-      shared-memory:
-        condition: service_healthy
+    container_name: ${TEAM_NAME:-dev-crew}-devops
+    restart: "no"
+    networks: [office, staging-env]
     volumes:
       - ./agents/devops/hermes-home:/opt/data
       - ./agents/devops/skills:/opt/data/skills/dev-crew:ro
       - ./crew:/opt/crew:ro
       - ./workspace:/workspace
-      # Host Docker daemon (read-only) so devops can bring up project compose files.
       - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
-      - HERMES_UID=501
-      - HERMES_GID=20
+      - HERMES_UID=${HERMES_UID:-501}
+      - HERMES_GID=${HERMES_GID:-20}
       - HERMES_WRITE_SAFE_ROOT=/opt/data:/workspace
-      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - CUSTOM_API_KEY=${CUSTOM_API_KEY:-}
+      - DOOR_SECRET=${DOOR_SECRET_DEVOPS:-}
+      - OFFICE_BUS_URL=${OFFICE_BUS_URL:-redis://shared-memory:6379}
+      - TEAM_NAME=${TEAM_NAME:-dev-crew}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
       - GIT_CONFIG_GLOBAL=/opt/data/.gitconfig
     ports:
-      - "8654:8644"
-    command: ["gateway", "run"]
+      - "${DEV_PORT_DEVOPS:-8654}:8644"
+    command: ["sh", "-c", "python3 /opt/crew/render_config.py && exec hermes gateway run"]
 
 networks:
-  crew:
-    driver: bridge
+  office:
+    external: true
+    name: agent-office-crew
   dev-env:
-    driver: bridge
-    name: dev-crew-dev-env
+    name: ${TEAM_NAME:-dev-crew}-dev-env
   staging-env:
-    driver: bridge
-    name: dev-crew-staging-env
+    name: ${TEAM_NAME:-dev-crew}-staging-env
