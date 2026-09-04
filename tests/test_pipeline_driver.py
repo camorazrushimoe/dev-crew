@@ -9,7 +9,18 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "dashboard"))
 
-from pipeline_driver import parse_verdicts, decide  # noqa: E402
+from pipeline_driver import parse_verdicts, decide, TICKET_RE  # noqa: E402
+
+
+class TestTicketBinding(unittest.TestCase):
+    def test_dev_crew_pr_title_has_ticket(self):
+        self.assertIsNotNone(TICKET_RE.search("BON-84: artworks.ai as live image + video vendor"))
+        self.assertIsNotNone(TICKET_RE.search("BON-82: Lichina dance-video §3 — Job + Telegram"))
+
+    def test_owner_pr_title_has_no_ticket(self):
+        self.assertIsNone(TICKET_RE.search("spec: identity positioning — same person, different clothes"))
+        self.assertIsNone(TICKET_RE.search("spec: ui-polish — static hero art + warmer copy"))
+        self.assertIsNone(TICKET_RE.search("docs: продукт — тот же человек, другая одежда"))
 
 
 class TestParseVerdicts(unittest.TestCase):
