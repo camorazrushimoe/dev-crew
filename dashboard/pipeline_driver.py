@@ -37,6 +37,11 @@ STATE_FILE = os.environ.get(
 )
 DRY_RUN = os.environ.get("DRIVER_DRY_RUN", "0") not in ("0", "", "false", "False")
 
+# Only drive PRs whose title carries a ticket id (dev-crew work is ticket-bound;
+# the owner's own spec/docs PRs carry no ticket and are managed by hand). Set
+# DRIVER_REQUIRE_TICKET=0 to drive every open PR regardless.
+REQUIRE_TICKET = os.environ.get("DRIVER_REQUIRE_TICKET", "1") not in ("0", "", "false", "False")
+
 # The review agents post verdicts as PR comments with these markers. This is
 # the contract between the driver and the review agents (see the spec).
 QA_MARKER = re.compile(r"\bqa\b", re.I)
@@ -117,9 +122,13 @@ def list_open_prs():
     if code != 0:
         return []
     try:
-        return [(p["number"], p["title"]) for p in json.loads(out)]
+        prs = [(p["number"], p["title"]) for p in json.loads(out)]
     except (ValueError, TypeError):
         return []
+    if REQUIRE_TICKET:
+        # Only dev-crew work: PRs whose title carries a ticket id (BON-12 …).
+        prs = [(n, t) for (n, t) in prs if TICKET_RE.search(t)]
+    return prs
 
 
 def pr_comments(number):
