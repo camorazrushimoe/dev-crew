@@ -66,6 +66,25 @@ class TestParseVerdicts(unittest.TestCase):
         ]
         self.assertEqual(parse_verdicts(comments), {"qa": None, "tech-pm": "approve"})
 
+    def test_ready_to_merge_counts_as_approve(self):
+        comments = [
+            "## QA Report — **Verdict: approve**",
+            "## Tech PM review — **Verdict**: ready to merge, implementation looks solid",
+        ]
+        self.assertEqual(parse_verdicts(comments), {"qa": "approve", "tech-pm": "approve"})
+
+    def test_lgtm_counts_as_approve(self):
+        comments = ["## Tech PM review — lgtm, ship it"]
+        self.assertEqual(parse_verdicts(comments), {"qa": None, "tech-pm": "approve"})
+
+    def test_needs_change_without_hyphen(self):
+        comments = ["## QA Report — needs change: fix the password default"]
+        self.assertEqual(parse_verdicts(comments), {"qa": "needs-changes", "tech-pm": None})
+
+    def test_changes_requested(self):
+        comments = ["## Tech PM review — changes requested: scope the gate to new users"]
+        self.assertEqual(parse_verdicts(comments), {"qa": None, "tech-pm": "needs-changes"})
+
 
 class TestDecide(unittest.TestCase):
     def test_fresh_pr_dispatches_reviews(self):
