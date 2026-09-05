@@ -46,9 +46,11 @@ REQUIRE_TICKET = os.environ.get("DRIVER_REQUIRE_TICKET", "1") not in ("0", "", "
 # the contract between the driver and the review agents (see the spec).
 QA_MARKER = re.compile(r"\bqa\b", re.I)
 PM_MARKER = re.compile(r"tech[- ]?pm", re.I)
-# Capture the verdict word within ~60 chars after "verdict" (handles
-# "Verdict: approve", "Verdict: `needs-changes`", "verdict: ✅ approve").
-VERDICT_RE = re.compile(r"verdict[^\n]{0,60}(needs-?changes|approve)", re.I)
+# Verdict wording varies across reviewers ("Verdict: approve", "ready to merge",
+# "needs change"). Match the signals case-insensitively, without a hard
+# "Verdict:" anchor — some reviewers phrase approval as "ready to merge".
+APPROVE_RE = re.compile(r"\bapprov(?:e|ed|al)\b|lgtm|ship\s*it|ready\s*to\s*merge", re.I)
+NEEDS_RE = re.compile(r"needs?[- ]?changes?|changes?\s+(?:requested|required)", re.I)
 TICKET_RE = re.compile(r"\b([A-Z]{2,}-\d+)\b")
 
 REVIEW_QA = "qa"
@@ -59,23 +61,31 @@ REVIEW_PM = "tech-pm"
 # Pure logic (unit-testable, no I/O)
 # ---------------------------------------------------------------------------
 
+def _verdict(body):
+    """Extract approve / needs-changes from a review comment body, or None."""
+    if NEEDS_RE.search(body):
+        return "needs-changes"
+    if APPROVE_RE.search(body):
+        return "approve"
+    return None
+
+
 def parse_verdicts(comments):
     """Latest verdict per reviewer, scanning comments in chronological order.
 
     Returns ``{"qa": None|"approve"|"needs-changes", "tech-pm": ...}``. A
     comment only counts as a review if it names the reviewer and carries a
-    verdict keyword; later comments overwrite earlier ones (re-reviews win).
+    verdict signal; later comments overwrite earlier ones (re-reviews win).
     """
     out: dict[str, str | None] = {REVIEW_QA: None, REVIEW_PM: None}
     for body in comments:
-        m = VERDICT_RE.search(body)
-        if not m:
+        v = _verdict(body)
+        if v is None:
             continue
-        verdict = "needs-changes" if "needs" in m.group(1).lower() else "approve"
         if PM_MARKER.search(body):
-            out[REVIEW_PM] = verdict
+            out[REVIEW_PM] = v
         elif QA_MARKER.search(body):
-            out[REVIEW_QA] = verdict
+            out[REVIEW_QA] = v
     return out
 
 
