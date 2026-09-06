@@ -87,33 +87,46 @@ class TestParseVerdicts(unittest.TestCase):
 
 
 class TestDecide(unittest.TestCase):
+    H0 = "aaaa0000"
+    H1 = "bbbb1111"
+
     def test_fresh_pr_dispatches_reviews(self):
-        self.assertEqual(decide(1, "BON-85: x", [], {}), [("reviews", 1, "BON-85: x")])
+        self.assertEqual(decide(1, "BON-85: x", self.H0, [], {}), [("reviews", 1, "BON-85: x")])
 
     def test_reviews_dispatched_waits(self):
-        state = {"1": {"reviews_dispatched": True}}
-        self.assertEqual(decide(1, "x", [], state), [])
+        state = {"1": {"stage": "review", "head": self.H0}}
+        self.assertEqual(decide(1, "x", self.H0, [], state), [])
 
     def test_partial_review_waits(self):
         comments = ["## QA Report — **Verdict: approve**"]
-        state = {"1": {"reviews_dispatched": True}}
-        self.assertEqual(decide(1, "x", comments, state), [])
+        state = {"1": {"stage": "review", "head": self.H0}}
+        self.assertEqual(decide(1, "x", self.H0, comments, state), [])
 
     def test_both_approve_merges(self):
         comments = [
             "## QA Report — **Verdict: approve**",
             "## Tech PM review — **Verdict: approve**",
         ]
-        self.assertEqual(decide(1, "x", comments, {}), [("merge", 1, "x")])
+        self.assertEqual(decide(1, "x", self.H0, comments, {}), [("merge", 1, "x")])
 
     def test_needs_changes_fixes(self):
         comments = ["## QA Report — **Verdict: needs-changes**"]
-        self.assertEqual(decide(1, "x", comments, {}), [("fix", 1, "x")])
+        self.assertEqual(decide(1, "x", self.H0, comments, {}), [("fix", 1, "x")])
 
-    def test_fix_not_redispatched(self):
+    def test_fix_waiting_for_push_does_not_redispatch(self):
         comments = ["## QA Report — **Verdict: needs-changes**"]
-        state = {"1": {"fix_dispatched": True}}
-        self.assertEqual(decide(1, "x", comments, state), [])
+        state = {"1": {"stage": "fix", "head": self.H0}}
+        self.assertEqual(decide(1, "x", self.H0, comments, state), [])
+
+    def test_fix_then_head_change_triggers_rereview(self):
+        comments = ["## QA Report — **Verdict: needs-changes**"]
+        state = {"1": {"stage": "fix", "head": self.H0}}
+        self.assertEqual(decide(1, "x", self.H1, comments, state), [("re-review", 1, "x")])
+
+    def test_rereview_waiting_does_not_refix(self):
+        comments = ["## QA Report — **Verdict: needs-changes**"]
+        state = {"1": {"stage": "re-review", "head": self.H1}}
+        self.assertEqual(decide(1, "x", self.H1, comments, state), [])
 
     def test_fix_takes_priority_over_approve(self):
         # qa approves but tech-pm still needs-changes -> fix, not merge.
@@ -121,7 +134,7 @@ class TestDecide(unittest.TestCase):
             "## QA Report — **Verdict: approve**",
             "## Tech PM review — **Verdict: needs-changes**",
         ]
-        self.assertEqual(decide(1, "x", comments, {}), [("fix", 1, "x")])
+        self.assertEqual(decide(1, "x", self.H0, comments, {}), [("fix", 1, "x")])
 
     def test_merged_is_terminal(self):
         state = {"1": {"merged": True}}
@@ -129,7 +142,7 @@ class TestDecide(unittest.TestCase):
             "## QA Report — **Verdict: approve**",
             "## Tech PM review — **Verdict: approve**",
         ]
-        self.assertEqual(decide(1, "x", comments, state), [])
+        self.assertEqual(decide(1, "x", self.H0, comments, state), [])
 
 
 if __name__ == "__main__":
