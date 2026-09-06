@@ -85,6 +85,24 @@ class TestParseVerdicts(unittest.TestCase):
         comments = ["## Tech PM review — changes requested: scope the gate to new users"]
         self.assertEqual(parse_verdicts(comments), {"qa": None, "tech-pm": "needs-changes"})
 
+    def test_pm_manager_header_counts_as_pm(self):
+        # PM uses "manager/spec-conformance review" header and mentions QA in body.
+        comments = [
+            "## BON-86 · Slice 1 — access-gate: manager/spec-conformance RE-REVIEW\n"
+            "QA already approved twice; this adds the manager lens.\n"
+            "**Verdict: approve — 0 blockers.**",
+        ]
+        self.assertEqual(parse_verdicts(comments), {"qa": None, "tech-pm": "approve"})
+
+    def test_qa_mentioning_manager_stays_qa(self):
+        # QA header, but the body mentions "manager finding".
+        comments = [
+            "## QA Report — re-review\n"
+            "Remaining unchecked §0 left for post-merge, per the manager finding.\n"
+            "**Verdict: approve**",
+        ]
+        self.assertEqual(parse_verdicts(comments), {"qa": "approve", "tech-pm": None})
+
 
 class TestDecide(unittest.TestCase):
     H0 = "aaaa0000"

@@ -42,10 +42,12 @@ DRY_RUN = os.environ.get("DRIVER_DRY_RUN", "0") not in ("0", "", "false", "False
 # DRIVER_REQUIRE_TICKET=0 to drive every open PR regardless.
 REQUIRE_TICKET = os.environ.get("DRIVER_REQUIRE_TICKET", "1") not in ("0", "", "false", "False")
 
-# The review agents post verdicts as PR comments with these markers. This is
-# the contract between the driver and the review agents (see the spec).
-QA_MARKER = re.compile(r"\bqa\b", re.I)
-PM_MARKER = re.compile(r"tech[- ]?pm", re.I)
+# Review agents identify themselves in the comment HEADER (first line), not the
+# body — a PM comment that *mentions* "QA" (or vice versa) must not be
+# misclassified.  QA -> "## QA Report …"; Tech PM -> "manager/spec-conformance
+# review …" or "## Tech PM review …".
+QA_MARKER = re.compile(r"\bqa\s+report\b", re.I)
+PM_MARKER = re.compile(r"tech[- ]?pm|\bmanager\b|spec[- ]?conformance", re.I)
 # Verdict wording varies across reviewers ("Verdict: approve", "ready to merge",
 # "needs change"). Match the signals case-insensitively, without a hard
 # "Verdict:" anchor — some reviewers phrase approval as "ready to merge".
@@ -70,22 +72,41 @@ def _verdict(body):
     return None
 
 
+def _reviewer(body):
+    """Classify a review comment as qa / tech-pm from its title line only.
+
+    The reviewer identifies themselves in the "## …" / "** …" title line; the
+    body may mention the *other* reviewer (e.g. "per the manager finding") and
+    must not flip the classification.
+    """
+    for line in body.splitlines():
+        s = line.strip()
+        if not s or s.startswith(">") or s.startswith("<"):
+            continue
+        if s.startswith("## ") or s.startswith("**"):
+            if PM_MARKER.search(s):
+                return REVIEW_PM
+            if QA_MARKER.search(s):
+                return REVIEW_QA
+            break
+    return None
+
+
 def parse_verdicts(comments):
     """Latest verdict per reviewer, scanning comments in chronological order.
 
     Returns ``{"qa": None|"approve"|"needs-changes", "tech-pm": ...}``. A
-    comment only counts as a review if it names the reviewer and carries a
-    verdict signal; later comments overwrite earlier ones (re-reviews win).
+    comment only counts as a review if it names the reviewer (in its header)
+    and carries a verdict signal; later comments overwrite earlier ones.
     """
     out: dict[str, str | None] = {REVIEW_QA: None, REVIEW_PM: None}
     for body in comments:
         v = _verdict(body)
         if v is None:
             continue
-        if PM_MARKER.search(body):
-            out[REVIEW_PM] = v
-        elif QA_MARKER.search(body):
-            out[REVIEW_QA] = v
+        r = _reviewer(body)
+        if r is not None:
+            out[r] = v
     return out
 
 
