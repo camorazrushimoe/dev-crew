@@ -12,7 +12,7 @@ name: ${TEAM_NAME:-dev-crew}
 # Env (from .env — see .env.example):
 #   TEAM_NAME         instance id (default: dev-crew)
 #   OFFICE_BUS_URL    Office Redis (default: redis://shared-memory:6379)
-#   CUSTOM_API_KEY    LLM key (runinfra)
+#   DEEPSEEK_API_KEY  LLM key (DeepSeek)
 #   DOOR_SECRET_*     per-agent door HMAC secrets
 #   DEV_PORT_*        host port overrides (defaults 8651–8654)
 #
@@ -39,7 +39,7 @@ services:
       - HERMES_UID=${HERMES_UID:-501}
       - HERMES_GID=${HERMES_GID:-20}
       - HERMES_WRITE_SAFE_ROOT=/opt/data:/workspace
-      - CUSTOM_API_KEY=${CUSTOM_API_KEY:-}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
       - DOOR_SECRET=${DOOR_SECRET_DEVELOPER:-}
       - OFFICE_BUS_URL=${OFFICE_BUS_URL:-redis://shared-memory:6379}
       - TEAM_NAME=${TEAM_NAME:-dev-crew}
@@ -63,7 +63,7 @@ services:
       - HERMES_UID=${HERMES_UID:-501}
       - HERMES_GID=${HERMES_GID:-20}
       - HERMES_WRITE_SAFE_ROOT=/opt/data:/workspace
-      - CUSTOM_API_KEY=${CUSTOM_API_KEY:-}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
       - DOOR_SECRET=${DOOR_SECRET_QA:-}
       - OFFICE_BUS_URL=${OFFICE_BUS_URL:-redis://shared-memory:6379}
       - TEAM_NAME=${TEAM_NAME:-dev-crew}
@@ -87,7 +87,7 @@ services:
       - HERMES_UID=${HERMES_UID:-501}
       - HERMES_GID=${HERMES_GID:-20}
       - HERMES_WRITE_SAFE_ROOT=/opt/data:/workspace
-      - CUSTOM_API_KEY=${CUSTOM_API_KEY:-}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
       - DOOR_SECRET=${DOOR_SECRET_TECH_PM:-}
       - OFFICE_BUS_URL=${OFFICE_BUS_URL:-redis://shared-memory:6379}
       - TEAM_NAME=${TEAM_NAME:-dev-crew}
@@ -115,7 +115,7 @@ services:
       - HERMES_UID=${HERMES_UID:-501}
       - HERMES_GID=${HERMES_GID:-20}
       - HERMES_WRITE_SAFE_ROOT=/opt/data:/workspace
-      - CUSTOM_API_KEY=${CUSTOM_API_KEY:-}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
       - DOOR_SECRET=${DOOR_SECRET_DEVOPS:-}
       - OFFICE_BUS_URL=${OFFICE_BUS_URL:-redis://shared-memory:6379}
       - TEAM_NAME=${TEAM_NAME:-dev-crew}
