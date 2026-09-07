@@ -58,9 +58,17 @@ flowchart TB
 
 ## Contracts
 
-1. **LLM API** — OpenAI-compatible (`OPENAI_BASE_URL` + `OPENAI_API_KEY` + model).
+1. **LLM API** — OpenAI-compatible endpoint, configured per agent via
+   `agents/<role>/hermes-home/config.yaml.template` and rendered at container
+   start by `crew/render_config.py`: `base_url` `https://api.deepseek.com/v1`,
+   model `deepseek-v4-flash`, `api_key` from `CUSTOM_API_KEY` in the instance
+   `.env`.
 2. **Message envelope** — `bus/action-schema.json` (`actor` / `action` / `target` / `payload` / `timestamp`).
-3. **Tokens** — `tokens/tokens.yaml` (real values, gitignored), mounted read-only per agent.
+3. **Secrets / config** — template composes source the instance `.env` (gitignored)
+   and each agent renders `config.yaml.template` → `config.yaml` at container start
+   (`crew/render_config.py`); the strict `tokens/tokens.yaml` SSOT exists via the
+   Office overlay on live composed instances (mounted read-only there), not in the
+   template composes themselves.
 4. **Door** — each agent exposes `POST /webhooks/inbox`, HMAC-SHA256 signed (`X-Hub-Signature-256`).
 
 ## Communication
@@ -129,7 +137,7 @@ Secrets and addresses that differ per running instance. Never committed.
 | Concern | Location |
 |---|---|
 | Cluster passwords | `.env` (template: `.env.example`) |
-| Agent tokens | `tokens/tokens.yaml` |
+| Agent tokens (LLM/GitHub) | `.env` on template composes; `tokens/tokens.yaml` under the Office overlay |
 | Door registry (HMAC secrets + URLs) | `crew/agents.json` |
 
 ### 3. Project work — what agents produce (outside the foundation)
