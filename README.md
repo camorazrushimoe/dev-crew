@@ -115,9 +115,9 @@ crew/agents.json            # agent registry (urls + secrets, gitignored)
 bus/action-schema.json      # message schema for the bus
 dashboard/app.py            # observability dashboard + run-supervision view
 dashboard/factorybus.py     # shared Redis/Linear clients (stdlib only)
-dashboard/completion_watcher.py  # deterministic task hooks (start/finish/stale)
+dashboard/completion_watcher.py  # LEGACY task-hooks watcher (retired — not started; see Dashboard)
 tokens/tokens.example.yaml  # per-agent tokens template
-workspace/                  # shared code area (mounted into agents; gitignored)
+workspace/                  # team tooling/env mount — project services/compose (mounted into agents; gitignored; NOT the work clone)
 ```
 
 ## Quick start
@@ -145,7 +145,6 @@ Agent registry: `crew/agents.json` (real, gitignored) + `crew/agents.example.jso
 
 ```bash
 python3 dashboard/app.py              # team status → http://localhost:8660
-python3 dashboard/completion_watcher.py  # deterministic task hooks (separate process)
 ```
 
 Live team view: which agents are up, their state (`working` / `idle` / `down`) and the
@@ -154,11 +153,11 @@ status/activity to Redis (`shared-memory`). The dashboard renders it as a live p
 (auto-refresh every 2s) plus a **run-supervision** view (a run = a Linear Project:
 tickets + states + assignees + agent activity + token/call cost).
 
-The **completion watcher** is the deterministic task-hooks runtime
-(`task-completion` spec): it tails each gateway log and, on inbound/response,
-publishes `task.started` / `task.finished` / `task.stale` to the bus, best-effort
-auto-comments Linear and moves ticket state, and pings the manager webhook
-(`MANAGER_WEBHOOK_URL`). Configure via `.env` (`LINEAR_API_KEY`, `WATCHER_STALE_MINUTES`).
+Deterministic task signals (`task.started` / `task.finished` / `task.stale`) come from
+**gateway completion hooks** → the shared bus (`task-completion` spec), not from a
+separate log-tail process. `dashboard/completion_watcher.py` is a **legacy** artifact
+from the retired log-tail model — it is not started anywhere and is kept only for
+reference. Configure task completion via `.env` (`LINEAR_API_KEY`).
 
 ## Specs (OpenSpec)
 

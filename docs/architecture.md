@@ -43,14 +43,17 @@ flowchart TB
 - **Agents** — isolated containers, each with its own Hermes runtime, tools and SOUL.
 - **shared-memory** — Redis: message bus (pub/sub + inbox queues) and shared state.
 - **entry point** — `crew-send.py` signs a message and POSTs it to any agent's webhook door.
-- **completion watcher** — `dashboard/completion_watcher.py` tails each gateway log and turns
-  inbound/response into deterministic `task.started` / `task.finished` / `task.stale` bus
-  events, plus best-effort Linear auto-comment/state-move and a manager webhook ping
-  (`task-completion` spec).
+- **task signals** — deterministic `task.started` / `task.finished` / `task.stale`
+  bus events come from **gateway completion hooks** (agent:start / agent:end handlers)
+  publishing to the shared bus (`task-completion` spec), not from a log-tail process.
+  `dashboard/completion_watcher.py` is a **legacy** artifact of the retired
+  log-tail watcher model — not started anywhere, kept for reference only.
 - **dashboard** — `dashboard/app.py` health view + run-supervision view (a run = a Linear
   Project: tickets + states + assignees + agent activity + cost).
-- **workspace** — a shared bind-mounted directory (`./workspace:/workspace`) where code lives.
-  Developer and qa have read/write, tech-pm read-only.
+- **workspace** — a shared bind-mounted directory (`./workspace:/workspace`) for team
+  tooling/env: per-project services and compose files, not the project work clone.
+  Agents work in **private clones under their hermes-home**; GitHub is the shared
+  medium. Developer and qa have read/write, tech-pm read-only.
 - **Generic environments** — project-agnostic dev/staging networks (see below).
 
 ## Contracts
@@ -135,16 +138,20 @@ The code, data and backlog of the products the factory builds. Never enters this
 
 | Concern | Location |
 |---|---|
-| Project code | `workspace/<project>/` (its own git repo) |
+| Project code | private clone under an agent's hermes-home (its own git repo) |
 | Project data | cluster volumes (its own schema/DB inside the shared clusters) |
 | Project backlog | a **separate Linear project** |
+
+The shared `workspace/<project>/` holds the project's **services/tooling/env**
+(compose files, connection strings, data volumes) that agents attach to the
+dev/staging networks — not the project work clone.
 
 ### Update flow (foundation upgrades don't touch project work)
 
 ```
 foundation change → PR → merge on GitHub → git pull on an instance
    → agents reload SOUL/skills ("become smarter")
-project work is untouched: workspace/, cluster data, and Linear projects are separate
+project work is untouched: agents' private hermes-home clones, cluster data, and Linear projects are separate
 ```
 
 ### Agent self-awareness
