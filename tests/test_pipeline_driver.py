@@ -103,6 +103,31 @@ class TestParseVerdicts(unittest.TestCase):
         ]
         self.assertEqual(parse_verdicts(comments), {"qa": "approve", "tech-pm": None})
 
+    def test_pm_round_review_title_counts_as_pm(self):
+        # PM round-3/4 titles dropped "manager": "round-N re-review at head …".
+        comments = [
+            "## BON-86 · Slice 2 — twerk-video: round-4 re-review at head f63734d (B2 fix)\n"
+            "**Verdict: approve — 0 blockers.**",
+        ]
+        self.assertEqual(parse_verdicts(comments), {"qa": None, "tech-pm": "approve"})
+
+    def test_strict_qa_header(self):
+        comments = ["## QA Review\n**Verdict: approve**"]
+        self.assertEqual(parse_verdicts(comments), {"qa": "approve", "tech-pm": None})
+
+    def test_strict_pm_header(self):
+        comments = ["## Tech PM Review\n**Verdict: approve**"]
+        self.assertEqual(parse_verdicts(comments), {"qa": None, "tech-pm": "approve"})
+
+    def test_verdict_anchor_ignores_prior_round_mention(self):
+        # Actual verdict "approve"; body mentions a prior round's "needs-changes".
+        comments = [
+            "## Tech PM Review\n"
+            "**Verdict: approve — 0 blockers.**\n"
+            "Round-3 blocker B2 resolved; QA's round-3 verdict was `needs-changes`.",
+        ]
+        self.assertEqual(parse_verdicts(comments), {"qa": None, "tech-pm": "approve"})
+
 
 class TestDecide(unittest.TestCase):
     H0 = "aaaa0000"
