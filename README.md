@@ -128,8 +128,13 @@ workspace/                  # shared code area (mounted into agents; gitignored)
 #    build it once (or after Dockerfile.agent changes): `docker compose build`.
 docker compose up -d
 
-# 2. Ping an agent via CLI
-docker exec dev-crew-developer hermes chat -q "hello"
+# 2. Bring-up smoke — every agent must answer an LLM round-trip.
+#    A green `docker ps` is never "up": this is the check that catches a dead
+#    provider/key before the first real task (issue #40).
+docker exec dev-crew-developer hermes chat -q "Reply with exactly: OK"
+docker exec dev-crew-qa        hermes chat -q "Reply with exactly: OK"
+docker exec dev-crew-tech-pm   hermes chat -q "Reply with exactly: OK"
+docker exec dev-crew-devops    hermes chat -q "Reply with exactly: OK"
 
 # 3. Send a message through a webhook door (from the host)
 python3 crew/crew-send.py developer "do this task"
@@ -137,6 +142,12 @@ python3 crew/crew-send.py developer "do this task"
 # 4. Agent → agent (from inside a container)
 docker exec dev-crew-developer python3 /opt/crew/crew-send.py qa "request" --container
 ```
+
+Office-composed instances additionally run the Agent Office overlay's
+`scripts/smoke.py` (fleet-level check); the per-agent round-trip above applies in
+both modes. Config is rendered at container start from the instance `.env`
+(template composes) or from `tokens/tokens.yaml` (Office overlay) — never edited
+by hand.
 
 Doors map to host ports: `developer` 8651, `qa` 8652, `tech-pm` 8653, `devops` 8654.
 Agent registry: `crew/agents.json` (real, gitignored) + `crew/agents.example.json` (template).
