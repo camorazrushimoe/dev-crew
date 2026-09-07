@@ -9,7 +9,13 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "dashboard"))
 
-from pipeline_driver import parse_verdicts, decide, TICKET_RE  # noqa: E402
+import pipeline_driver as pd  # noqa: E402
+from pipeline_driver import (  # noqa: E402
+    parse_verdicts,
+    decide,
+    TICKET_RE,
+    needs_human_comment,
+)
 
 
 class TestTicketBinding(unittest.TestCase):
@@ -186,6 +192,148 @@ class TestDecide(unittest.TestCase):
             "## Tech PM review — **Verdict: approve**",
         ]
         self.assertEqual(decide(1, "x", self.H0, comments, state), [])
+
+
+class TestLoopBreaker(unittest.TestCase):
+    """Review-cycle loop breaker (#35): rounds cap, re-review advance, needs-human.
+
+    Acceptance list mirrors openspec/changes/review-cycle-loop-breaker/design.md
+    D8 and the spec delta scenarios. ``DRIVER_MAX_REVIEW_ROUNDS`` is a module
+    global (env-derived at import); tests patch it directly.
+    """
+
+    H0 = "aaaa0000"
+    H1 = "bbbb1111"
+    H2 = "cccc3333"
+    T = "BON-84: artworks"
+
+    def setUp(self):
+        self._saved_cap = getattr(pd, "DRIVER_MAX_REVIEW_ROUNDS", 2)
+
+    def tearDown(self):
+        pd.DRIVER_MAX_REVIEW_ROUNDS = self._saved_cap
+
+    @staticmethod
+    def _qa(round_no, verdict="needs-changes"):
+        return f"## QA Report (round {round_no}) — **Verdict: {verdict}**"
+
+    @staticmethod
+    def _pm(round_no, verdict="needs-changes"):
+        return f"## Tech PM review (round {round_no}) — **Verdict: {verdict}**"
+
+    def test_third_needs_changes_escalates_at_default_cap(self):
+        # Two completed rounds; a third needs-changes on the re-reviewed head
+        # must escalate (default cap 2) instead of dispatching another fix.
+        state = {"1": {"stage": "re-review", "head": self.H2, "rounds": 2,
+                       "qa_verdicts": 2, "pm_verdicts": 0}}
+        comments = [self._qa(1), self._qa(2), self._qa(3)]
+        self.assertEqual(
+            decide(1, self.T, self.H2, comments, state),
+            [("needs-human", 1, self.T)],
+        )
+
+    def test_cap_one_second_needs_changes_escalates(self):
+        pd.DRIVER_MAX_REVIEW_ROUNDS = 1
+        state = {"1": {"stage": "re-review", "head": self.H1, "rounds": 1,
+                       "qa_verdicts": 1, "pm_verdicts": 0}}
+        comments = [self._qa(1), self._qa(2)]
+        self.assertEqual(
+            decide(1, self.T, self.H1, comments, state),
+            [("needs-human", 1, self.T)],
+        )
+
+    def test_cap_one_first_fix_still_dispatched(self):
+        pd.DRIVER_MAX_REVIEW_ROUNDS = 1
+        self.assertEqual(
+            decide(1, self.T, self.H0, [self._qa(1)], {}),
+            [("fix", 1, self.T)],
+        )
+
+    def test_both_reviewers_needs_changes_same_head_one_fix(self):
+        comments = [self._qa(1), self._pm(1)]
+        self.assertEqual(decide(1, self.T, self.H0, comments, {}),
+                         [("fix", 1, self.T)])
+
+    def test_needs_human_terminal_suppresses_all_actions(self):
+        state = {"1": {"stage": "re-review", "head": self.H0, "rounds": 2,
+                       "needs_human": True,
+                       "needs_human_at": "2026-09-07T12:00:00Z",
+                       "reason": "review-cycle cap reached"}}
+        approve = [
+            "## QA Review — **Verdict: approve**",
+            "## Tech PM review — **Verdict: approve**",
+        ]
+        # New head commits AND approve verdicts: still suppressed.
+        self.assertEqual(decide(1, self.T, "ffff9999", approve, state), [])
+        # New needs-changes verdict: still suppressed.
+        self.assertEqual(decide(1, self.T, "ffff9999",
+                                [self._qa(1)], state), [])
+
+    def test_human_reset_resumes_driver(self):
+        # needs_human cleared (human reset out-of-band) -> rules apply again.
+        state = {"1": {"stage": "review", "head": self.H0,
+                       "needs_human": False}}
+        approve = [
+            "## QA Review — **Verdict: approve**",
+            "## Tech PM review — **Verdict: approve**",
+        ]
+        self.assertEqual(decide(1, self.T, self.H0, approve, state),
+                         [("merge", 1, self.T)])
+
+    def test_needs_human_comment_is_neutral_to_parser(self):
+        body = needs_human_comment(7, self.T, 2)
+        self.assertEqual(parse_verdicts([body]),
+                         {"qa": None, "tech-pm": None})
+
+    def test_driver_own_comment_ignored_even_with_verdict_lexemes(self):
+        # Sentinel short-circuit: even a hostile driver comment that contains
+        # reviewer/verdict lexemes must not flip parsed verdicts.
+        hostile = ("<!-- conveyor:needs-human -->\n"
+                   "## Loop breaker\n"
+                   "**Verdict: needs-changes** approve lgtm changes requested")
+        self.assertEqual(parse_verdicts([hostile]),
+                         {"qa": None, "tech-pm": None})
+        comments = [hostile, self._qa(1, "approve")]
+        self.assertEqual(parse_verdicts(comments),
+                         {"qa": "approve", "tech-pm": None})
+
+    def test_legacy_state_without_new_keys(self):
+        # No rounds key -> treated as 0 (fix still allowed under the cap).
+        self.assertEqual(
+            decide(1, self.T, self.H0, [self._qa(1)],
+                   {"1": {"stage": "review", "head": self.H0}}),
+            [("fix", 1, self.T)],
+        )
+        # Legacy re-review entry (no verdict counters) -> the needs-changes on
+        # record is treated as already accounted for (wait, not re-fix).
+        self.assertEqual(
+            decide(1, self.T, self.H1, [self._qa(1)],
+                   {"1": {"stage": "re-review", "head": self.H1}}),
+            [],
+        )
+        # Legacy fix entry waiting for a push -> no redispatch.
+        self.assertEqual(
+            decide(1, self.T, self.H0, [self._qa(1)],
+                   {"1": {"stage": "fix", "head": self.H0}}),
+            [],
+        )
+
+    def test_rereview_new_verdict_advances_round(self):
+        # QA replied to the re-review with needs-changes (count 2 > recorded 1)
+        # -> dispatch the next fix, rounds still below the default cap.
+        state = {"1": {"stage": "re-review", "head": self.H1, "rounds": 1,
+                       "qa_verdicts": 1, "pm_verdicts": 0}}
+        comments = [self._qa(1), self._qa(2)]
+        self.assertEqual(decide(1, self.T, self.H1, comments, state),
+                         [("fix", 1, self.T)])
+
+    def test_no_double_fix_after_round_advance(self):
+        # Round 2 fix was just dispatched on this head; same comments on the
+        # same head must not dispatch a second fix.
+        state = {"1": {"stage": "fix", "head": self.H1, "rounds": 1,
+                       "qa_verdicts": 1, "pm_verdicts": 0}}
+        comments = [self._qa(1), self._qa(2)]
+        self.assertEqual(decide(1, self.T, self.H1, comments, state), [])
 
 
 if __name__ == "__main__":
