@@ -102,6 +102,21 @@ REVIEW_PM = "tech-pm"
 # Pure logic (unit-testable, no I/O)
 # ---------------------------------------------------------------------------
 
+def _is_driver_comment(body):
+    """True when the comment is the driver's own (machine sentinel leads it).
+
+    The needs-human comment carries the sentinel on its FIRST line (design
+    D4 / tasks.md); a review comment that merely *quotes* the sentinel later
+    in its body is not a driver comment and must still parse as a review.
+    """
+    for line in body.splitlines():
+        s = line.strip()
+        if not s:
+            continue
+        return s.startswith(DRIVER_SENTINEL)
+    return False
+
+
 def _verdict(body):
     """Extract approve / needs-changes from a review comment body, or None.
 
@@ -110,7 +125,7 @@ def _verdict(body):
     changing the actual verdict on the current head. The driver's own comments
     carry the ``<!-- conveyor`` sentinel and are never verdicts.
     """
-    if DRIVER_SENTINEL in body:
+    if _is_driver_comment(body):
         return None
     m = VERDICT_RE.search(body)
     if m:
@@ -133,7 +148,7 @@ def _reviewer(body):
     review (manager / spec-conformance / tech-pm / plain "review") is PM. The
     driver's own comments (``<!-- conveyor`` sentinel) are never reviews.
     """
-    if DRIVER_SENTINEL in body:
+    if _is_driver_comment(body):
         return None
     for line in body.splitlines():
         s = line.strip()
@@ -148,24 +163,37 @@ def _reviewer(body):
     return None
 
 
-def parse_verdicts(comments):
-    """Latest verdict per reviewer, scanning comments in chronological order.
+def _verdict_pairs(comments):
+    """Yield (reviewer, verdict) for each review comment, in chronological order.
 
-    Returns ``{"qa": None|"approve"|"needs-changes", "tech-pm": ...}``. A
-    comment only counts as a review if it names the reviewer (in its header)
-    and carries a verdict signal; later comments overwrite earlier ones. The
-    driver's own comments (``<!-- conveyor`` sentinel) are skipped.
+    Shared scan behind the last-wins verdict map (parse_verdicts) and the
+    per-reviewer counters (_verdict_counts): skip the driver's own comments
+    (first-line sentinel) and any comment that is not a signed verdict, so the
+    skip/parse/classify shape lives in exactly one place.
     """
-    out: dict[str, str | None] = {REVIEW_QA: None, REVIEW_PM: None}
     for body in comments:
-        if DRIVER_SENTINEL in body:
+        if _is_driver_comment(body):
             continue
         v = _verdict(body)
         if v is None:
             continue
         r = _reviewer(body)
         if r is not None:
-            out[r] = v
+            yield r, v
+
+
+def parse_verdicts(comments):
+    """Latest verdict per reviewer, scanning comments in chronological order.
+
+    Returns ``{"qa": None|"approve"|"needs-changes", "tech-pm": ...}``. A
+    comment only counts as a review if it names the reviewer (in its header)
+    and carries a verdict signal; later comments overwrite earlier ones. The
+    driver's own comments (``<!-- conveyor`` sentinel on the first line) are
+    skipped.
+    """
+    out: dict[str, str | None] = {REVIEW_QA: None, REVIEW_PM: None}
+    for r, v in _verdict_pairs(comments):
+        out[r] = v
     return out
 
 
@@ -178,14 +206,8 @@ def _verdict_counts(comments):
     dispatch; a larger count today means reviewers replied.
     """
     out = {REVIEW_QA: 0, REVIEW_PM: 0}
-    for body in comments:
-        if DRIVER_SENTINEL in body:
-            continue
-        if _verdict(body) is None:
-            continue
-        r = _reviewer(body)
-        if r is not None:
-            out[r] += 1
+    for r, _ in _verdict_pairs(comments):
+        out[r] += 1
     return out
 
 
@@ -350,15 +372,19 @@ def needs_human_comment(number, title, rounds):
 
     The first line is the machine sentinel; the header carries no reviewer
     token; the prose avoids verdict lexemes, so the driver can never re-read
-    its own escalation as a review (design D4).
+    its own escalation as a review (design D4). The ticket is stated
+    explicitly (spec: the comment SHALL state the ticket); an unticketed PR
+    (DRIVER_REQUIRE_TICKET=0 mode) gets no ticket claim.
     """
+    ticket = _ticket(title)
+    label = f"Ticket {ticket} — PR #{number}" if ticket else f"PR #{number}"
     return (
         "<!-- conveyor:needs-human -->\n"
         "## Loop breaker\n"
-        f"PR #{number} ({title}) reached the review-cycle cap after {rounds} "
-        "completed fix round(s). A human must intervene on this ticket; the "
-        "driver will dispatch no further fixes, re-reviews, or merges until "
-        "the state entry is reset."
+        f"{label} ({title}) reached the review-cycle cap after {rounds} "
+        "completed fix round(s). A human must intervene; the driver will "
+        "dispatch no further fixes, re-reviews, or merges until the state "
+        "entry is reset."
     )
 
 
@@ -386,9 +412,9 @@ def apply(action, state, head, comments):
     key = str(number)
     st = state.setdefault(key, {})
     ticket = _ticket(title) or "(no-ticket)"
-    counts = _verdict_counts(comments)
 
     if kind == "reviews":
+        counts = _verdict_counts(comments)
         dispatch(REVIEW_QA, _review_brief(ticket, number, title, "qa"))
         dispatch(REVIEW_PM, _review_brief(ticket, number, title, "tech-pm"))
         st["stage"] = "review"
@@ -397,6 +423,7 @@ def apply(action, state, head, comments):
         st["pm_verdicts"] = counts[REVIEW_PM]
         print(f"[driver] dispatched reviews for PR #{number} ({title})")
     elif kind == "re-review":
+        counts = _verdict_counts(comments)
         dispatch(REVIEW_QA, _re_review_brief(ticket, number, title, "qa"))
         dispatch(REVIEW_PM, _re_review_brief(ticket, number, title, "tech-pm"))
         st["stage"] = "re-review"
@@ -420,6 +447,16 @@ def apply(action, state, head, comments):
               f"(round {st['rounds']})")
     elif kind == "needs-human":
         rounds = st.get("rounds", 0)
+        # Terminal state FIRST: whatever happens to the best-effort side
+        # effects below, the PR must end this tick marked needs-human. A
+        # non-terminal entry would make the next tick re-decide needs-human
+        # and re-post a duplicate escalation comment (idempotency, spec).
+        st["needs_human"] = True
+        st["needs_human_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        st["reason"] = (
+            f"review-cycle cap reached: {rounds} fix round(s) completed "
+            f"(DRIVER_MAX_REVIEW_ROUNDS={DRIVER_MAX_REVIEW_ROUNDS})"
+        )
         body = needs_human_comment(number, title, rounds)
         try:
             code, out = post_comment(number, body)
@@ -428,13 +465,13 @@ def apply(action, state, head, comments):
         except Exception as exc:  # best-effort (D7): never crash the run
             print(f"[driver] needs-human comment PR #{number} error: {exc}")
         if ticket != "(no-ticket)":
-            dispatch("tech-pm", _needs_human_brief(ticket, number, title, rounds))
-        st["needs_human"] = True
-        st["needs_human_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-        st["reason"] = (
-            f"review-cycle cap reached: {rounds} fix round(s) completed "
-            f"(DRIVER_MAX_REVIEW_ROUNDS={DRIVER_MAX_REVIEW_ROUNDS})"
-        )
+            try:
+                code, out = dispatch("tech-pm",
+                                     _needs_human_brief(ticket, number, title, rounds))
+                if code != 0:
+                    print(f"[driver] tech-pm dispatch PR #{number} failed: {out}")
+            except Exception as exc:  # best-effort (spec L59-60/L84-86)
+                print(f"[driver] tech-pm dispatch PR #{number} error: {exc}")
         print(f"[driver] PR #{number} ({title}) marked needs-human "
               f"after {rounds} round(s)")
 

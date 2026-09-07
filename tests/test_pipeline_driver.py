@@ -6,6 +6,7 @@ Run:  python3 -m unittest tests.test_pipeline_driver -v
 import os
 import sys
 import unittest
+from unittest import mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "dashboard"))
 
@@ -334,6 +335,82 @@ class TestLoopBreaker(unittest.TestCase):
                        "qa_verdicts": 1, "pm_verdicts": 0}}
         comments = [self._qa(1), self._qa(2)]
         self.assertEqual(decide(1, self.T, self.H1, comments, state), [])
+
+
+class TestNeedsHumanApply(unittest.TestCase):
+    """apply() needs-human action: terminal state + best-effort side effects.
+
+    Review finding (SPEC axis c1): the tech-pm dispatch was unguarded and the
+    terminal flags were written after it, so a subprocess failure crashed the
+    whole run and left the PR non-terminal — each tick re-decided needs-human
+    and re-posted the escalation comment. Spec: side effects SHALL be
+    best-effort and SHALL NOT block other PRs; needs-human SHALL be terminal.
+    """
+
+    T = "BON-84: artworks"
+
+    def test_apply_posts_comment_and_dispatches_tech_pm(self):
+        state = {}
+        with mock.patch.object(pd, "post_comment", return_value=(0, "")) as pc, \
+             mock.patch.object(pd, "dispatch", return_value=(0, "")) as dsp:
+            pd.apply(("needs-human", 1, self.T), state, "aaaa0000", [])
+        pc.assert_called_once_with(1, mock.ANY)
+        dsp.assert_called_once()
+        agent, brief = dsp.call_args.args
+        self.assertEqual(agent, "tech-pm")
+        self.assertIn("Needs human:", brief)
+
+    def test_apply_marks_terminal_even_if_tech_pm_dispatch_fails(self):
+        # A failing tech-pm dispatch must not crash the run (best-effort) and
+        # must not leave the PR non-terminal (else the next tick re-decides
+        # and re-posts a duplicate escalation comment).
+        state = {}
+        with mock.patch.object(pd, "post_comment", return_value=(0, "")), \
+             mock.patch.object(
+                 pd, "dispatch", side_effect=RuntimeError("crew-send.py missing")):
+            # Must not raise.
+            pd.apply(("needs-human", 1, self.T), state, "aaaa0000", [])
+        st = state["1"]
+        self.assertTrue(st["needs_human"])
+        self.assertIn("needs_human_at", st)
+        self.assertIn("review-cycle cap", st["reason"])
+
+    def test_apply_no_tech_pm_dispatch_for_unticketed_pr(self):
+        state = {}
+        with mock.patch.object(pd, "post_comment", return_value=(0, "")), \
+             mock.patch.object(pd, "dispatch", return_value=(0, "")) as dsp:
+            pd.apply(("needs-human", 1, "docs: housekeeping"), state,
+                     "aaaa0000", [])
+        dsp.assert_not_called()
+
+    def test_needs_human_comment_states_the_ticket(self):
+        # spec: the needs-human PR comment SHALL state the ticket (the ticket
+        # id must not sit only incidentally inside the PR title).
+        body = needs_human_comment(1, self.T, 2)
+        self.assertIn("Ticket BON-84", body)
+
+    def test_needs_human_comment_without_ticket_does_not_claim_one(self):
+        # REQUIRE_TICKET=0 mode drives unticketed PRs; the prose must not
+        # claim a ticket that does not exist.
+        body = needs_human_comment(1, "docs: housekeeping", 2)
+        self.assertNotIn("this ticket", body)
+        self.assertNotIn("BON-", body)
+
+
+class TestSentinelScope(unittest.TestCase):
+    """The driver sentinel skips comments only when it leads the comment.
+
+    The documented contract (design D4 / tasks.md) puts the machine sentinel
+    on the comment's FIRST line. A reviewer comment that merely quotes the
+    sentinel mid-body must still parse as a review.
+    """
+
+    def test_sentinel_mid_body_still_parses_as_review(self):
+        comment = ("## QA Report — **Verdict: approve**\n"
+                   "Loop breaker noted: <!-- conveyor:needs-human -->.\n"
+                   "No blockers.")
+        self.assertEqual(parse_verdicts([comment]),
+                         {"qa": "approve", "tech-pm": None})
 
 
 if __name__ == "__main__":
