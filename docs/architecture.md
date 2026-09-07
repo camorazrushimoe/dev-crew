@@ -55,7 +55,11 @@ flowchart TB
 
 ## Contracts
 
-1. **LLM API** — OpenAI-compatible (`OPENAI_BASE_URL` + `OPENAI_API_KEY` + model).
+1. **LLM API** — OpenAI-compatible endpoint, configured per agent via
+   `agents/<role>/hermes-home/config.yaml.template` and rendered at container
+   start by `crew/render_config.py`: `base_url` `https://api.deepseek.com/v1`,
+   model `deepseek-v4-flash`, `api_key` from `CUSTOM_API_KEY` in the instance
+   `.env`.
 2. **Message envelope** — `bus/action-schema.json` (`actor` / `action` / `target` / `payload` / `timestamp`).
 3. **Secrets / config** — template composes source the instance `.env` (gitignored)
    and each agent renders `config.yaml.template` → `config.yaml` at container start
